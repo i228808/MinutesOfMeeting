@@ -1,8 +1,107 @@
 const passport = require('passport');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const { generateToken } = require('../utils/jwt');
-const { asyncHandler } = require('../middleware/error.middleware');
+const { asyncHandler, APIError } = require('../middleware/error.middleware');
+
+/**
+ * Register a new user with email/password
+ */
+const register = asyncHandler(async (req, res) => {
+    const { name, email, password } = req.body;
+
+    // Validate input
+    if (!name || !email || !password) {
+        throw new APIError('Name, email, and password are required', 400);
+    }
+
+    if (password.length < 8) {
+        throw new APIError('Password must be at least 8 characters', 400);
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+        throw new APIError('An account with this email already exists', 409);
+    }
+
+    // Create new user
+    const user = await User.create({
+        name,
+        email: email.toLowerCase(),
+        password,
+        auth_provider: 'local',
+        email_verified: false
+    });
+
+    // Create FREE subscription
+    await Subscription.create({
+        user_id: user._id,
+        tier: 'FREE',
+        status: 'ACTIVE'
+    });
+
+    // Generate JWT
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+        success: true,
+        message: 'Account created successfully',
+        token,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            subscription_tier: user.subscription_tier
+        }
+    });
+});
+
+/**
+ * Login with email/password
+ */
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+        throw new APIError('Email and password are required', 400);
+    }
+
+    // Find user with password field
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+    if (!user) {
+        throw new APIError('Invalid email or password', 401);
+    }
+
+    // Check if user uses OAuth
+    if (user.auth_provider === 'google' && !user.password) {
+        throw new APIError('This account uses Google Sign-In. Please login with Google.', 400);
+    }
+
+    // Compare password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+        throw new APIError('Invalid email or password', 401);
+    }
+
+    // Generate JWT
+    const token = generateToken(user._id);
+
+    res.json({
+        success: true,
+        token,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            profile_image: user.profile_image,
+            subscription_tier: user.subscription_tier
+        }
+    });
+});
 
 /**
  * Initiate Google OAuth login
@@ -67,6 +166,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
             email: user.email,
             profile_image: user.profile_image,
             subscription_tier: user.subscription_tier,
+            auth_provider: user.auth_provider,
+            email_verified: user.email_verified,
             created_at: user.created_at
         },
         subscription: subscription ? {
@@ -88,7 +189,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
  * Logout user
  */
 const logout = asyncHandler(async (req, res) => {
-    // Clear cookie if using cookies
     res.clearCookie('token');
 
     res.json({
@@ -156,6 +256,8 @@ const deleteAccount = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+    register,
+    login,
     googleAuth,
     googleCallback,
     getCurrentUser,

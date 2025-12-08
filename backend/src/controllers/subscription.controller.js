@@ -5,6 +5,41 @@ const { asyncHandler } = require('../middleware/error.middleware');
 const { notificationService, LimitService } = require('../services');
 
 /**
+ * Helper: Resolve Price ID from Product ID if needed
+ */
+const getPriceId = async (tier) => {
+    let id;
+    // Support both naming conventions or just check the value
+    if (tier === 'BASIC') id = process.env.STRIPE_PRICE_BASIC || process.env.STRIPE_PRODUCT_BASIC;
+    else if (tier === 'PREMIUM') id = process.env.STRIPE_PRICE_PREMIUM || process.env.STRIPE_PRODUCT_PREMIUM;
+    else if (tier === 'ULTRA') id = process.env.STRIPE_PRICE_ULTRA || process.env.STRIPE_PRODUCT_ULTRA;
+
+    if (!id) throw new Error(`Configuration missing for tier: ${tier}`);
+
+    // If it's a Product ID (prod_), fetch the price
+    if (id.startsWith('prod_')) {
+        try {
+            const prices = await stripe.prices.list({
+                product: id,
+                active: true,
+                limit: 1
+            });
+
+            if (prices.data.length === 0) {
+                throw new Error(`No active price found for product ${id}`);
+            }
+            return prices.data[0].id;
+        } catch (error) {
+            console.error('Error fetching price for product:', error);
+            throw error;
+        }
+    }
+
+    // Otherwise assume it's a price ID
+    return id;
+};
+
+/**
  * Get subscription information
  */
 const getSubscriptionInfo = asyncHandler(async (req, res) => {
@@ -27,13 +62,11 @@ const getSubscriptionInfo = asyncHandler(async (req, res) => {
 const createSubscription = asyncHandler(async (req, res) => {
     const { tier } = req.body;
 
-    if (!['BASIC', 'ULTRA'].includes(tier)) {
-        return res.status(400).json({ error: 'Invalid tier. Choose BASIC or ULTRA' });
+    if (!['BASIC', 'PREMIUM', 'ULTRA'].includes(tier)) {
+        return res.status(400).json({ error: 'Invalid tier. Choose BASIC, PREMIUM, or ULTRA' });
     }
 
-    const priceId = tier === 'BASIC'
-        ? process.env.STRIPE_PRICE_BASIC
-        : process.env.STRIPE_PRICE_ULTRA;
+    const priceId = await getPriceId(tier);
 
     // Get or create Stripe customer
     let subscription = await Subscription.findOne({ user_id: req.user._id });
@@ -69,8 +102,8 @@ const createSubscription = asyncHandler(async (req, res) => {
             price: priceId,
             quantity: 1
         }],
-        success_url: `${process.env.CLIENT_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/subscription/cancel`,
+        success_url: `${process.env.CLIENT_URL}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.CLIENT_URL}/dashboard/subscription?canceled=true`,
         metadata: {
             user_id: req.user._id.toString(),
             tier
@@ -89,7 +122,7 @@ const createSubscription = asyncHandler(async (req, res) => {
 const changeTier = asyncHandler(async (req, res) => {
     const { tier } = req.body;
 
-    if (!['FREE', 'BASIC', 'ULTRA'].includes(tier)) {
+    if (!['FREE', 'BASIC', 'PREMIUM', 'ULTRA'].includes(tier)) {
         return res.status(400).json({ error: 'Invalid tier' });
     }
 
@@ -99,11 +132,15 @@ const changeTier = asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'No subscription found' });
     }
 
-    // If upgrading and has Stripe subscription, use Stripe
-    if (tier !== 'FREE' && subscription.stripe_subscription_id) {
-        const priceId = tier === 'BASIC'
-            ? process.env.STRIPE_PRICE_BASIC
-            : process.env.STRIPE_PRICE_ULTRA;
+    // If switching to FREE, cancel current subscription
+    if (tier === 'FREE') {
+        return cancelSubscription(req, res);
+    }
+
+    // If upgrading/changing paid tier
+    if (subscription.stripe_subscription_id) {
+        // Has existing subscription -> Update it
+        const priceId = await getPriceId(tier);
 
         const stripeSubscription = await stripe.subscriptions.retrieve(
             subscription.stripe_subscription_id
@@ -116,30 +153,32 @@ const changeTier = asyncHandler(async (req, res) => {
             }],
             proration_behavior: 'create_prorations'
         });
-    }
 
-    // Update local records
-    subscription.tier = tier;
-    await subscription.save();
+        // Update local records immediately (webhook will also confirm)
+        subscription.tier = tier;
+        await subscription.save();
 
-    req.user.subscription_tier = tier;
-    await req.user.save();
+        req.user.subscription_tier = tier;
+        await req.user.save();
 
-    // Send notification
-    try {
-        await notificationService.sendSubscriptionEmail(req.user, tier, 'changed');
-    } catch (error) {
-        console.error('Failed to send subscription email:', error);
-    }
-
-    res.json({
-        success: true,
-        subscription: {
-            tier: subscription.tier,
-            status: subscription.status,
-            limits: subscription.limits
+        try {
+            await notificationService.sendSubscriptionEmail(req.user, tier, 'changed');
+        } catch (error) {
+            console.error('Failed to send subscription email:', error);
         }
-    });
+
+        return res.json({
+            success: true,
+            subscription: {
+                tier: subscription.tier,
+                status: subscription.status,
+                limits: subscription.limits
+            }
+        });
+    } else {
+        // No existing subscription -> Create new one (Checkout)
+        return createSubscription(req, res);
+    }
 });
 
 /**
@@ -206,6 +245,27 @@ const getCustomerPortal = asyncHandler(async (req, res) => {
     });
 
     res.json({ portal_url: session.url });
+});
+
+/**
+ * Verify checkout session manually (fallback for webhooks)
+ */
+const verifySession = asyncHandler(async (req, res) => {
+    const { session_id } = req.body;
+
+    if (!session_id) {
+        return res.status(400).json({ error: 'Session ID required' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session && session.payment_status === 'paid') {
+        // Reuse webhook logic to update DB
+        await handleCheckoutCompleted(session);
+        return res.json({ success: true, tier: session.metadata.tier });
+    }
+
+    res.json({ success: false });
 });
 
 /**
@@ -338,5 +398,6 @@ module.exports = {
     cancelSubscription,
     reactivateSubscription,
     getCustomerPortal,
-    handleStripeWebhook
+    handleStripeWebhook,
+    verifySession
 };

@@ -14,6 +14,7 @@ const contractRoutes = require('./routes/contract.routes');
 const googleRoutes = require('./routes/google.routes');
 const reminderRoutes = require('./routes/reminder.routes');
 const streamRoutes = require('./routes/stream.routes');
+const calendarRoutes = require('./routes/calendar.routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/error.middleware');
@@ -67,12 +68,13 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/google', googleRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/realtime', streamRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // Stripe webhook (raw body needed)
 app.post('/api/webhook/stripe',

@@ -42,6 +42,8 @@ router.use(authenticate);
 
 // Meeting routes
 router.post('/upload', upload.single('audio'), meetingController.uploadTranscript);
+router.post('/analyze', upload.single('audio'), meetingController.analyzeOnly);
+router.post('/confirm', meetingController.confirmMeeting);
 router.post('/:id/process', meetingController.processTranscript);
 router.get('/:id', meetingController.getMeeting);
 router.get('/', meetingController.listMeetings);

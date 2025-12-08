@@ -11,11 +11,18 @@ class LimitService {
             priority_processing: false
         },
         BASIC: {
-            uploads_per_month: 50,
+            uploads_per_month: 20,
             audio_minutes_per_month: 120,
-            contracts_per_month: 20,
+            contracts_per_month: 10,
             can_use_extension: true,
             priority_processing: false
+        },
+        PREMIUM: {
+            uploads_per_month: 50,
+            audio_minutes_per_month: 300,
+            contracts_per_month: Infinity,
+            can_use_extension: true,
+            priority_processing: true
         },
         ULTRA: {
             uploads_per_month: Infinity,

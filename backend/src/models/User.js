@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -13,14 +14,22 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         trim: true
     },
-    oauth_provider: {
+    // Password for email/password auth (optional if using OAuth)
+    password: {
         type: String,
-        enum: ['google'],
-        required: true
+        default: null,
+        select: false // Don't include password in queries by default
+    },
+    // Auth provider - 'local' for email/password, 'google' for OAuth
+    auth_provider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local'
     },
     oauth_id: {
         type: String,
-        required: true
+        default: null,
+        sparse: true
     },
     profile_image: {
         type: String,
@@ -28,7 +37,7 @@ const userSchema = new mongoose.Schema({
     },
     subscription_tier: {
         type: String,
-        enum: ['FREE', 'BASIC', 'ULTRA'],
+        enum: ['FREE', 'BASIC', 'PREMIUM', 'ULTRA'],
         default: 'FREE'
     },
     google_access_token: {
@@ -38,6 +47,11 @@ const userSchema = new mongoose.Schema({
     google_refresh_token: {
         type: String,
         default: null
+    },
+    // Email verification
+    email_verified: {
+        type: Boolean,
+        default: false
     },
     // Usage tracking
     monthly_uploads: {
@@ -63,14 +77,39 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-// Compound index for OAuth lookup
-userSchema.index({ oauth_provider: 1, oauth_id: 1 }, { unique: true });
+// Index for email lookup
+userSchema.index({ email: 1 }, { unique: true });
+
+// Compound index for OAuth lookup (sparse to allow null oauth_id)
+userSchema.index({ auth_provider: 1, oauth_id: 1 }, {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { oauth_id: { $exists: true, $ne: null } }
+});
+
+// Hash password before saving
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password') || !this.password) {
+        return next();
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+    if (!this.password) return false;
+    return await bcrypt.compare(candidatePassword, this.password);
+};
 
 // Method to check usage limits
 userSchema.methods.checkLimit = function (type) {
     const limits = {
         FREE: { uploads: 5, audio_minutes: 10, contracts: 3 },
-        BASIC: { uploads: 50, audio_minutes: 120, contracts: 20 },
+        BASIC: { uploads: 20, audio_minutes: 120, contracts: 10 },
+        PREMIUM: { uploads: 50, audio_minutes: 300, contracts: Infinity },
         ULTRA: { uploads: Infinity, audio_minutes: Infinity, contracts: Infinity }
     };
 

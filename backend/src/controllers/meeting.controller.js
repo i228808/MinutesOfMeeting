@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const MeetingTranscript = require('../models/MeetingTranscript');
+const CalendarEvent = require('../models/CalendarEvent');
 const { asyncHandler } = require('../middleware/error.middleware');
 const { llmService, audioService, googleService, notificationService, LimitService } = require('../services');
 const { paginate, paginateResponse } = require('../utils/helpers');
@@ -136,6 +137,40 @@ const processTranscript = asyncHandler(async (req, res) => {
         meeting.error_message = null;
 
         await meeting.save();
+
+        // Auto-create calendar events from deadlines
+        if (meeting.processed_deadlines?.length > 0) {
+            try {
+                for (const deadline of meeting.processed_deadlines) {
+                    if (!deadline.deadline) continue;
+
+                    // Check if already exists
+                    const existing = await CalendarEvent.findOne({
+                        user_id: req.user._id,
+                        meeting_id: meeting._id,
+                        title: deadline.task
+                    });
+
+                    if (!existing) {
+                        const deadlineDate = new Date(deadline.deadline);
+                        await CalendarEvent.create({
+                            user_id: req.user._id,
+                            meeting_id: meeting._id,
+                            title: deadline.task,
+                            description: `Assigned to: ${deadline.actor || 'Unassigned'}\nFrom meeting: ${meeting.title}`,
+                            start_time: deadlineDate,
+                            end_time: new Date(deadlineDate.getTime() + 60 * 60 * 1000),
+                            all_day: true,
+                            type: 'deadline',
+                            color: '#f59e0b'
+                        });
+                    }
+                }
+                console.log(`Created ${meeting.processed_deadlines.length} calendar events from meeting deadlines`);
+            } catch (calError) {
+                console.error('Failed to create calendar events:', calError);
+            }
+        }
 
         // Send notification
         try {
@@ -333,6 +368,161 @@ const createCalendarEvents = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Analyze transcript or audio - for review before confirm
+ * Handles both text transcript and audio file (transcribes first)
+ */
+const analyzeOnly = asyncHandler(async (req, res) => {
+    const { transcript, title } = req.body;
+    let rawTranscript = transcript || '';
+
+    // If audio file was uploaded, transcribe it first
+    if (req.file) {
+        try {
+            console.log('Transcribing audio file:', req.file.path);
+            const transcriptionResult = await audioService.transcribeAudio(req.file.path);
+            rawTranscript = transcriptionResult.text;
+            console.log('Transcription complete, length:', rawTranscript.length);
+
+            // Clean up the uploaded file after transcription
+            if (fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+        } catch (transcribeError) {
+            // Clean up on error
+            if (req.file && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+            throw new Error(`Transcription failed: ${transcribeError.message}`);
+        }
+    }
+
+    if (!rawTranscript) {
+        return res.status(400).json({ error: 'Transcript or audio file is required' });
+    }
+
+    // Analyze with LLM
+    const analysis = await llmService.analyzeTranscript(rawTranscript);
+
+    res.json({
+        success: true,
+        title: title || `Meeting ${new Date().toLocaleDateString()}`,
+        transcript: rawTranscript,
+        analysis: {
+            summary: analysis.summary || '',
+            actors: analysis.actors || [],
+            roles: analysis.roles || [],
+            responsibilities: analysis.responsibilities || [],
+            deadlines: analysis.deadlines || [],
+            key_decisions: analysis.key_decisions || [],
+            contract_detected: analysis.contract_detected || false,
+            contract_elements: analysis.contract_elements || null
+        }
+    });
+});
+
+/**
+ * Confirm and save reviewed meeting data + create calendar events + reminders
+ */
+const confirmMeeting = asyncHandler(async (req, res) => {
+    const {
+        title,
+        transcript,
+        summary,
+        actors,
+        roles,
+        responsibilities,
+        deadlines,
+        key_decisions
+    } = req.body;
+
+    if (!transcript) {
+        return res.status(400).json({ error: 'Transcript is required' });
+    }
+
+    // Check upload limit
+    const canUpload = await LimitService.canPerformAction(req.user._id, 'upload');
+    if (!canUpload.allowed) {
+        return res.status(429).json({
+            error: 'Limit exceeded',
+            message: canUpload.reason,
+            upgrade_prompt: canUpload.upgrade_prompt
+        });
+    }
+
+    // Create meeting with all analyzed data
+    const meeting = await MeetingTranscript.create({
+        user_id: req.user._id,
+        title: title || `Meeting ${new Date().toLocaleDateString()}`,
+        raw_transcript: transcript,
+        summary: summary || '',
+        processed_actors: actors || [],
+        processed_roles: roles || [],
+        processed_responsibilities: responsibilities || [],
+        processed_deadlines: deadlines || [],
+        key_decisions: key_decisions || [],
+        status: 'COMPLETED'
+    });
+
+    // Increment upload usage
+    await LimitService.incrementUsage(req.user._id, 'upload');
+
+    // Create calendar events and reminders from deadlines
+    const createdEvents = [];
+    const createdReminders = [];
+
+    if (deadlines?.length > 0) {
+        const Reminder = require('../models/Reminder');
+
+        for (const deadline of deadlines) {
+            if (!deadline.deadline) continue;
+
+            const deadlineDate = new Date(deadline.deadline);
+
+            // Create calendar event
+            const event = await CalendarEvent.create({
+                user_id: req.user._id,
+                meeting_id: meeting._id,
+                title: deadline.task,
+                description: `Assigned to: ${deadline.actor || 'Unassigned'}\nFrom meeting: ${meeting.title}`,
+                start_time: deadlineDate,
+                end_time: new Date(deadlineDate.getTime() + 60 * 60 * 1000),
+                all_day: true,
+                type: 'deadline',
+                color: '#f59e0b'
+            });
+            createdEvents.push(event);
+
+            // Create reminder (1 day before deadline)
+            const reminderDate = new Date(deadlineDate.getTime() - 24 * 60 * 60 * 1000);
+            if (reminderDate > new Date()) {
+                const reminder = await Reminder.create({
+                    user_id: req.user._id,
+                    meeting_id: meeting._id,
+                    task: deadline.task,
+                    message: `Reminder: "${deadline.task}" is due tomorrow. Assigned to: ${deadline.actor || 'Unassigned'}`,
+                    remind_at: reminderDate,
+                    reminder_type: 'EMAIL',
+                    status: 'PENDING'
+                });
+                createdReminders.push(reminder);
+            }
+        }
+    }
+
+    res.status(201).json({
+        success: true,
+        meeting: {
+            id: meeting._id,
+            title: meeting.title,
+            status: meeting.status,
+            summary: meeting.summary
+        },
+        events_created: createdEvents.length,
+        reminders_created: createdReminders.length
+    });
+});
+
 module.exports = {
     uploadTranscript,
     processTranscript,
@@ -340,5 +530,7 @@ module.exports = {
     listMeetings,
     deleteMeeting,
     exportToSheets,
-    createCalendarEvents
+    createCalendarEvents,
+    analyzeOnly,
+    confirmMeeting
 };

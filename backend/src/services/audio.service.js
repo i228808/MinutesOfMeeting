@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
+const axios = require('axios');
 
 /**
  * AudioService - Calls the local Flask STT service for transcription
@@ -12,7 +13,7 @@ const FormData = require('form-data');
 class AudioService {
     constructor() {
         // URL to the Flask STT service
-        this.sttServiceUrl = process.env.STT_SERVICE_URL || 'http://localhost:5000';
+        this.sttServiceUrl = process.env.STT_SERVICE_URL || 'http://localhost:5001';
     }
 
     /**
@@ -28,27 +29,27 @@ class AudioService {
         }
 
         try {
-            // Create form data with the audio file
-            const FormData = (await import('form-data')).default;
+            // Create form data with the audio file stream
             const form = new FormData();
             form.append('audio', fs.createReadStream(filePath));
 
-            // Call the Flask STT endpoint
-            const response = await fetch(`${this.sttServiceUrl}/transcribe`, {
-                method: 'POST',
-                body: form,
-                headers: form.getHeaders()
+            console.log('Sending audio file to STT service:');
+            console.log('  - File path:', filePath);
+            console.log('  - STT URL:', `${this.sttServiceUrl}/transcribe`);
+            console.log('  - Form headers:', form.getHeaders());
+
+            // Call the Flask STT endpoint using axios
+            const response = await axios.post(`${this.sttServiceUrl}/transcribe`, form, {
+                headers: {
+                    ...form.getHeaders()
+                },
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || `STT service error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = response.data;
 
             // Estimate duration from file size
-            const stats = fs.statSync(filePath);
             const estimatedDuration = this.getAudioDuration(filePath);
 
             return {
@@ -57,10 +58,15 @@ class AudioService {
                 duration: estimatedDuration
             };
         } catch (error) {
-            console.error('Transcription Error:', error);
+            console.error('Transcription Error:', error.message);
 
             if (error.code === 'ECONNREFUSED') {
                 throw new Error('STT service not running. Start it with: cd STT && python app.py');
+            }
+
+            // Handle axios error response
+            if (error.response?.data?.error) {
+                throw new Error(`Failed to transcribe audio: ${error.response.data.error}`);
             }
 
             throw new Error(`Failed to transcribe audio: ${error.message}`);
@@ -195,8 +201,8 @@ class AudioService {
      */
     async checkServiceHealth() {
         try {
-            const response = await fetch(`${this.sttServiceUrl}/`);
-            return response.ok;
+            const response = await axios.get(`${this.sttServiceUrl}/`);
+            return response.status === 200;
         } catch {
             return false;
         }

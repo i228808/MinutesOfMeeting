@@ -6,26 +6,14 @@ const calendarEventSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    meeting_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'MeetingTranscript',
-        default: null
-    },
-    google_event_id: {
-        type: String,
-        required: true
-    },
     title: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     description: {
         type: String,
         default: ''
-    },
-    deadline: {
-        type: Date,
-        required: true
     },
     start_time: {
         type: Date,
@@ -35,15 +23,27 @@ const calendarEventSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    attendees: [{
-        email: String,
-        name: String,
-        response_status: {
-            type: String,
-            enum: ['needsAction', 'declined', 'tentative', 'accepted'],
-            default: 'needsAction'
-        }
-    }],
+    all_day: {
+        type: Boolean,
+        default: false
+    },
+    // Link to source meeting (if event was created from meeting deadlines)
+    meeting_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MeetingTranscript',
+        default: null
+    },
+    // Type of event
+    type: {
+        type: String,
+        enum: ['deadline', 'reminder', 'meeting', 'custom'],
+        default: 'custom'
+    },
+    // Color for calendar display
+    color: {
+        type: String,
+        default: '#d97706' // Amber color
+    },
     location: {
         type: String,
         default: ''
@@ -53,12 +53,14 @@ const calendarEventSchema = new mongoose.Schema({
         enum: ['SCHEDULED', 'COMPLETED', 'CANCELLED'],
         default: 'SCHEDULED'
     },
-    reminder_minutes: [{
-        type: Number
-    }],
-    calendar_id: {
+    // For future Google Calendar sync
+    synced_to_google: {
+        type: Boolean,
+        default: false
+    },
+    google_event_id: {
         type: String,
-        default: 'primary'
+        default: null
     }
 }, {
     timestamps: {
@@ -67,9 +69,9 @@ const calendarEventSchema = new mongoose.Schema({
     }
 });
 
-// Indexes
-calendarEventSchema.index({ user_id: 1, deadline: 1 });
+// Indexes for efficient queries
+calendarEventSchema.index({ user_id: 1, start_time: 1 });
+calendarEventSchema.index({ user_id: 1, meeting_id: 1 });
 calendarEventSchema.index({ google_event_id: 1 });
-calendarEventSchema.index({ meeting_id: 1 });
 
 module.exports = mongoose.model('CalendarEvent', calendarEventSchema);

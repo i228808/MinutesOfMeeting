@@ -314,6 +314,84 @@ const getRevisionHistory = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Generate contract from meeting analysis with regional laws
+ */
+const generateFromAnalysis = asyncHandler(async (req, res) => {
+    const {
+        transcript,
+        contract_elements,
+        region,
+        contract_type,
+        title,
+        custom_instructions,
+        meeting_id
+    } = req.body;
+
+    if (!transcript) {
+        return res.status(400).json({ error: 'Transcript is required' });
+    }
+
+    // Check contract limit
+    const canCreate = await LimitService.canPerformAction(req.user._id, 'contract');
+    if (!canCreate.allowed) {
+        return res.status(429).json({
+            error: 'Contract limit exceeded',
+            message: canCreate.reason,
+            upgrade_prompt: canCreate.upgrade_prompt
+        });
+    }
+
+    // Generate contract with LLM
+    const draftText = await llmService.generateContractFromTranscript({
+        transcript,
+        contract_elements,
+        region: region || 'General',
+        contract_type: contract_type || 'SERVICE_AGREEMENT',
+        title,
+        custom_instructions
+    });
+
+    // Extract parties from contract elements
+    const parties = (contract_elements?.parties_identified || []).map(name => ({
+        name,
+        role: 'Party'
+    }));
+
+    // Create contract record
+    const contract = await Contract.create({
+        user_id: req.user._id,
+        meeting_id: meeting_id || null,
+        title: title || `${contract_type || 'Service'} Agreement - ${new Date().toLocaleDateString()}`,
+        contract_type: contract_type || 'SERVICE_AGREEMENT',
+        parties,
+        draft_text: draftText,
+        status: 'DRAFTED',
+        revision_history: [{
+            version: 1,
+            content: draftText,
+            changed_by: 'AI',
+            changed_at: new Date(),
+            notes: `Generated from transcript with ${region} jurisdiction`
+        }]
+    });
+
+    // Increment usage
+    await LimitService.incrementUsage(req.user._id, 'contract');
+
+    res.status(201).json({
+        success: true,
+        contract: {
+            id: contract._id,
+            title: contract.title,
+            contract_type: contract.contract_type,
+            status: contract.status,
+            draft_text: contract.draft_text,
+            created_at: contract.created_at
+        }
+    });
+});
+
 module.exports = {
     draftContract,
     updateContract,
@@ -321,5 +399,6 @@ module.exports = {
     getContract,
     listContracts,
     deleteContract,
-    getRevisionHistory
+    getRevisionHistory,
+    generateFromAnalysis
 };

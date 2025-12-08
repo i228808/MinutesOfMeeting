@@ -9,7 +9,7 @@ const subscriptionSchema = new mongoose.Schema({
     },
     tier: {
         type: String,
-        enum: ['FREE', 'BASIC', 'ULTRA'],
+        enum: ['FREE', 'BASIC', 'PREMIUM', 'ULTRA'],
         default: 'FREE'
     },
     limits: {
@@ -62,7 +62,8 @@ const subscriptionSchema = new mongoose.Schema({
 subscriptionSchema.pre('save', function (next) {
     const tierLimits = {
         FREE: { upload_limit: 5, audio_limit: 10, contract_limit: 3 },
-        BASIC: { upload_limit: 50, audio_limit: 120, contract_limit: 20 },
+        BASIC: { upload_limit: 20, audio_limit: 120, contract_limit: 10 },
+        PREMIUM: { upload_limit: 50, audio_limit: 300, contract_limit: 999999 },
         ULTRA: { upload_limit: 999999, audio_limit: 999999, contract_limit: 999999 }
     };
 

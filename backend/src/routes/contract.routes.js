@@ -8,6 +8,7 @@ router.use(authenticate);
 
 // Contract routes
 router.post('/draft', contractController.draftContract);
+router.post('/generate-from-analysis', contractController.generateFromAnalysis);
 router.get('/', contractController.listContracts);
 router.get('/:id', contractController.getContract);
 router.put('/:id', contractController.updateContract);

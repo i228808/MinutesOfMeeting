@@ -1,228 +1,210 @@
-const nodemailer = require('nodemailer');
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 class NotificationService {
-    constructor() {
-        // Initialize email transporter
-        this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT) || 587,
-            secure: false,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
+  constructor() {
+    // Initialize Brevo API
+    this.defaultClient = SibApiV3Sdk.ApiClient.instance;
+    this.apiKey = this.defaultClient.authentications['api-key'];
+    this.apiKey.apiKey = process.env.BREVO_API_KEY;
+    this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
+    this.sender = {
+      email: 'abdullahmansoor04@gmail.com',
+      name: 'Meeting Minutes AI'
+    };
+  }
+
+  /**
+   * Send an email notification
+   */
+  async sendEmail(to, subject, html, text = null) {
+    try {
+      if (!process.env.BREVO_API_KEY) {
+        console.warn('⚠️ BREVO_API_KEY not set, skipping email send');
+        return { success: false, error: 'API key missing' };
+      }
+
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
+      sendSmtpEmail.sender = this.sender;
+      sendSmtpEmail.to = [{ email: to }];
+      if (text) sendSmtpEmail.textContent = text;
+
+      const data = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      console.log('✅ Email sent successfully via Brevo. MessageId:', data.messageId);
+      return { success: true, messageId: data.messageId };
+    } catch (error) {
+      console.error('❌ Send Email Error (Brevo):', error);
+      // Don't crash the app if email fails
+      return { success: false, error: error.message };
     }
+  }
 
-    /**
-     * Send an email notification
-     */
-    async sendEmail(to, subject, html, text = null) {
-        try {
-            const mailOptions = {
-                from: `"Meeting Minutes AI" <${process.env.SMTP_USER}>`,
-                to,
-                subject,
-                html,
-                text: text || html.replace(/<[^>]*>/g, '')
-            };
+  /**
+   * Send reminder email
+   */
+  async sendReminderEmail(user, reminder) {
+    const subject = `⏰ Reminder: ${reminder.task}`;
 
-            const info = await this.transporter.sendMail(mailOptions);
-            console.log('Email sent:', info.messageId);
-            return { success: true, messageId: info.messageId };
-        } catch (error) {
-            console.error('Send Email Error:', error);
-            throw new Error(`Failed to send email: ${error.message}`);
-        }
-    }
-
-    /**
-     * Send reminder email
-     */
-    async sendReminderEmail(user, reminder) {
-        const subject = `⏰ Reminder: ${reminder.task}`;
-
-        const html = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
-    .task-box { background: white; border-left: 4px solid #667eea; padding: 15px; margin: 15px 0; }
-    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+    body { font-family: 'Segoe UI', user-scalable, system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f5; }
+    .container { max-width: 600px; margin: 20px auto; padding: 0; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .header { background: #d97706; color: white; padding: 30px 20px; text-align: center; }
+    .content { padding: 30px 25px; }
+    .task-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .priority-badge { display: inline-block; background: #d97706; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }
+    .btn { display: inline-block; background: #1f2937; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin-top: 10px; }
+    .footer { background: #18181b; padding: 20px; text-align: center; color: #71717a; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>⏰ Task Reminder</h1>
+      <h1 style="margin: 0; font-size: 24px;">Task Reminder</h1>
     </div>
     <div class="content">
-      <p>Hi ${user.name},</p>
-      <p>This is a reminder about your upcoming task:</p>
+      <p style="font-size: 16px;">Hi ${user.name},</p>
+      <p>This is a reminder that the following task is due <strong>tomorrow</strong>.</p>
       
       <div class="task-box">
-        <h3>${reminder.task}</h3>
-        <p>${reminder.message}</p>
+        <span class="priority-badge">DUE TOMORROW</span>
+        <h2 style="margin: 8px 0; color: #1f2937;">${reminder.task}</h2>
+        <p style="margin: 0; color: #4b5563;">${reminder.message}</p>
       </div>
       
-      <p>Don't forget to complete this task on time!</p>
+      <p>Please ensure this item is completed on time.</p>
       
-      <div class="footer">
-        <p>This reminder was sent by Meeting Minutes AI</p>
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/reminders" class="btn">View My Dashboard</a>
       </div>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} Meeting Minutes AI. All rights reserved.</p>
     </div>
   </div>
 </body>
 </html>
 `;
 
-        return await this.sendEmail(user.email, subject, html);
-    }
+    return await this.sendEmail(user.email, subject, html);
+  }
 
-    /**
-     * Send meeting processed notification
-     */
-    async sendMeetingProcessedEmail(user, meeting) {
-        const subject = `✅ Meeting Processed: ${meeting.title}`;
+  /**
+   * Send meeting processed notification
+   */
+  async sendMeetingProcessedEmail(user, meeting) {
+    const subject = `✅ Meeting Processed: ${meeting.title}`;
 
-        const actionItems = (meeting.processed_responsibilities || [])
-            .map(r => `<li><strong>${r.actor}</strong>: ${r.task}</li>`)
-            .join('');
+    const actionItems = (meeting.processed_responsibilities || [])
+      .map(r => `<div style="margin-bottom: 8px; padding-left: 10px; border-left: 3px solid #10b981;"><strong>${r.actor}</strong>: ${r.task}</div>`)
+      .join('');
 
-        const deadlines = (meeting.processed_deadlines || [])
-            .map(d => `<li>${d.task} - Due: ${d.deadline || 'TBD'}</li>`)
-            .join('');
+    const deadlines = (meeting.processed_deadlines || [])
+      .map(d => `<div style="margin-bottom: 8px; padding-left: 10px; border-left: 3px solid #f59e0b;"><strong>${d.task}</strong><br><span style="font-size: 12px; color: #6b7280;">Due: ${d.deadline ? new Date(d.deadline).toLocaleDateString() : 'TBD'}</span></div>`)
+      .join('');
 
-        const html = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
-    .section { background: white; padding: 15px; margin: 15px 0; border-radius: 8px; }
-    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-    ul { padding-left: 20px; }
+    body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; }
+    .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; }
+    .section { margin-bottom: 25px; }
+    .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; font-weight: 700; margin-bottom: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>✅ Meeting Processed!</h1>
+      <h1 style="color: #10b981; margin: 0;">Meeting Processed</h1>
+      <p style="margin: 5px 0 0; color: #6b7280;">"${meeting.title}"</p>
     </div>
-    <div class="content">
-      <p>Hi ${user.name},</p>
-      <p>Your meeting "<strong>${meeting.title}</strong>" has been processed.</p>
-      
-      <div class="section">
-        <h3>📝 Summary</h3>
-        <p>${meeting.summary || 'No summary available'}</p>
-      </div>
-      
-      ${actionItems ? `
-      <div class="section">
-        <h3>📋 Action Items</h3>
-        <ul>${actionItems}</ul>
-      </div>
-      ` : ''}
-      
-      ${deadlines ? `
-      <div class="section">
-        <h3>📅 Deadlines</h3>
-        <ul>${deadlines}</ul>
-      </div>
-      ` : ''}
-      
-      <p>Log in to view the full details and export to Google Sheets.</p>
-      
-      <div class="footer">
-        <p>Meeting Minutes AI - Automating your meeting notes</p>
-      </div>
+    
+    <div class="section">
+      <div class="section-title">Summary</div>
+      <p style="background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 0;">${meeting.summary || 'No summary available'}</p>
+    </div>
+    
+    ${actionItems ? `
+    <div class="section">
+      <div class="section-title">Action Items</div>
+      ${actionItems}
+    </div>
+    ` : ''}
+    
+    ${deadlines ? `
+    <div class="section">
+      <div class="section-title">Upcoming Deadlines</div>
+      ${deadlines}
+    </div>
+    ` : ''}
+    
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/meetings/${meeting._id}" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600;">View Full Meeting</a>
     </div>
   </div>
 </body>
 </html>
 `;
 
-        return await this.sendEmail(user.email, subject, html);
-    }
+    return await this.sendEmail(user.email, subject, html);
+  }
 
-    /**
-     * Send subscription confirmation email
-     */
-    async sendSubscriptionEmail(user, tier, action = 'upgraded') {
-        const subject = `🎉 Subscription ${action === 'upgraded' ? 'Upgraded' : 'Changed'}: ${tier}`;
+  /**
+   * Send subscription confirmation email
+   */
+  async sendSubscriptionEmail(user, tier, action = 'upgraded') {
+    const subject = `🎉 Subscription ${action === 'upgraded' ? 'Upgraded' : 'Changed'} to ${tier}`;
 
-        const features = {
-            BASIC: ['50 meeting uploads/month', '2 hours of audio/month', '20 contracts/month', 'Real-time extension streaming'],
-            ULTRA: ['Unlimited uploads', 'Unlimited audio', 'Unlimited contracts', 'Priority processing', 'Real-time extension streaming']
-        };
+    const features = {
+      BASIC: ['50 meeting uploads/month', '2 hours of audio/month', '20 contracts/month'],
+      ULTRA: ['Unlimited uploads', 'Unlimited audio', 'Unlimited contracts', 'Priority processing']
+    };
 
-        const tierFeatures = features[tier] || [];
+    const tierFeatures = features[tier] || [];
 
-        const html = `
+    const html = `
 <!DOCTYPE html>
 <html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
-    .feature-list { background: white; padding: 15px; border-radius: 8px; }
-    .feature-list li { padding: 5px 0; }
-    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-  </style>
-</head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🎉 Welcome to ${tier}!</h1>
+  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #8b5cf6;">You're now on the ${tier} Plan! 🚀</h1>
+    <p>Hi ${user.name},</p>
+    <p>Your subscription has been successfully updated.</p>
+    
+    <div style="background: #f5f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0;">Plan Features:</h3>
+      <ul style="padding-left: 20px;">
+        ${tierFeatures.map(f => `<li>${f}</li>`).join('')}
+      </ul>
     </div>
-    <div class="content">
-      <p>Hi ${user.name},</p>
-      <p>Your subscription has been ${action} to <strong>${tier}</strong>!</p>
-      
-      <div class="feature-list">
-        <h3>Your Plan Includes:</h3>
-        <ul>
-          ${tierFeatures.map(f => `<li>✅ ${f}</li>`).join('')}
-        </ul>
-      </div>
-      
-      <p>Thank you for choosing Meeting Minutes AI!</p>
-      
-      <div class="footer">
-        <p>Questions? Reply to this email for support.</p>
-      </div>
-    </div>
+    
+    <p>Enjoy your new powers!</p>
   </div>
 </body>
 </html>
 `;
 
-        return await this.sendEmail(user.email, subject, html);
-    }
+    return await this.sendEmail(user.email, subject, html);
+  }
 
-    /**
-     * Verify email configuration
-     */
-    async verifyConnection() {
-        try {
-            await this.transporter.verify();
-            console.log('✅ Email transporter verified');
-            return true;
-        } catch (error) {
-            console.error('Email transporter verification failed:', error);
-            return false;
-        }
+  /**
+   * Verify connection (stub for Brevo)
+   */
+  async verifyConnection() {
+    if (!process.env.BREVO_API_KEY) {
+      console.error('❌ Brevo API Key missing');
+      return false;
     }
+    return true;
+  }
 }
 
 module.exports = new NotificationService();
