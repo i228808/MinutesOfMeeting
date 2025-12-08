@@ -47,6 +47,7 @@ router.post('/confirm', meetingController.confirmMeeting);
 router.post('/:id/process', meetingController.processTranscript);
 router.get('/:id', meetingController.getMeeting);
 router.get('/', meetingController.listMeetings);
+router.put('/:id', meetingController.updateMeeting);
 router.delete('/:id', meetingController.deleteMeeting);
 
 // Google integrations for meetings

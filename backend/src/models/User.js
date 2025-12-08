@@ -53,6 +53,19 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    verification_otp: {
+        type: String,
+        select: false
+    },
+    otp_expires: {
+        type: Date,
+        select: false
+    },
+    // Privacy
+    data_usage_consent: {
+        type: Boolean,
+        default: false
+    },
     // Usage tracking
     monthly_uploads: {
         type: Number,

@@ -15,5 +15,6 @@ router.put('/:id', contractController.updateContract);
 router.put('/:id/finalize', contractController.finalizeContract);
 router.delete('/:id', contractController.deleteContract);
 router.get('/:id/revisions', contractController.getRevisionHistory);
+router.post('/:id/export-docs', contractController.exportToDocs);
 
 module.exports = router;

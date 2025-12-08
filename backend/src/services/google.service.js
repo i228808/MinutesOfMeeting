@@ -28,6 +28,158 @@ class GoogleService {
     }
 
     // =====================
+    // GOOGLE DOCS
+    // =====================
+
+    /**
+     * Create a Google Doc with formatted content
+     */
+    /**
+     * Create a Google Doc with formatted content from Markdown
+     */
+    async createDoc(user, title, markdownContent) {
+        const auth = this.getOAuth2Client(user);
+        const docs = google.docs({ version: 'v1', auth });
+        const drive = google.drive({ version: 'v3', auth });
+
+        try {
+            // 1. Create blank doc
+            const createResponse = await docs.documents.create({
+                requestBody: { title }
+            });
+            const documentId = createResponse.data.documentId;
+
+            // 2. Parse Markdown to Batch Requests
+            const requests = this.parseMarkdownToRequests(markdownContent);
+
+            // 3. Execute Batch Update
+            if (requests.length > 0) {
+                await docs.documents.batchUpdate({
+                    documentId,
+                    requestBody: { requests }
+                });
+            }
+
+            // 4. Get file URL via Drive API
+            const file = await drive.files.get({
+                fileId: documentId,
+                fields: 'webViewLink'
+            });
+
+            return {
+                documentId,
+                documentUrl: file.data.webViewLink
+            };
+        } catch (error) {
+            console.error('Create Doc Error:', error);
+            throw new Error(`Failed to create Google Doc: ${error.message}`);
+        }
+    }
+
+    /**
+     * Helper: Convert Markdown to Google Docs API Requests
+     */
+    parseMarkdownToRequests(markdown) {
+        const requests = [];
+        let currentIndex = 1; // Docs start at index 1
+
+        const lines = markdown.split('\n');
+
+        // We process line by line. 
+        // Note: In a real robust parser, we'd handle inline styles (bold/italic) more granularly.
+        // Here we provide a "good enough" implementation for headers and lists.
+
+        for (const line of lines) {
+            let text = line;
+            let style = 'NORMAL_TEXT';
+            let isList = false;
+
+            // Detect Headers
+            if (line.startsWith('# ')) {
+                text = line.substring(2);
+                style = 'HEADING_1';
+            } else if (line.startsWith('## ')) {
+                text = line.substring(3);
+                style = 'HEADING_2';
+            } else if (line.startsWith('### ')) {
+                text = line.substring(4);
+                style = 'HEADING_3';
+            } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                text = line.substring(2);
+                isList = true;
+            }
+
+            // Handle Bold (Simple case: **Bold**)
+            // If the whole line is bold, we style it.
+            // Complex inline bolding requires splitting the string which is tricky with indices.
+            let isBold = false;
+            if (text.startsWith('**') && text.endsWith('**')) {
+                text = text.substring(2, text.length - 2);
+                isBold = true;
+            }
+
+            // Insert Text (plus newline)
+            const fullText = text + '\n';
+            requests.push({
+                insertText: {
+                    text: fullText,
+                    location: { index: currentIndex }
+                }
+            });
+
+            // Apply Paragraph Style (Headers, Lists)
+            if (style !== 'NORMAL_TEXT') {
+                requests.push({
+                    updateParagraphStyle: {
+                        range: {
+                            startIndex: currentIndex,
+                            endIndex: currentIndex + fullText.length
+                        },
+                        paragraphStyle: {
+                            namedStyleType: style
+                        },
+                        fields: 'namedStyleType'
+                    }
+                });
+            }
+
+            // Apply List Style
+            if (isList) {
+                requests.push({
+                    createParagraphBullets: {
+                        range: {
+                            startIndex: currentIndex,
+                            endIndex: currentIndex + fullText.length
+                        },
+                        bulletPreset: 'BULLET_DISC_CIRCLE_SQUARE'
+                    }
+                });
+            }
+
+            // Apply Bold Style
+            if (isBold) {
+                requests.push({
+                    updateTextStyle: {
+                        range: {
+                            startIndex: currentIndex,
+                            endIndex: currentIndex + fullText.length
+                        },
+                        textStyle: {
+                            bold: true
+                        },
+                        fields: 'bold'
+                    }
+                });
+            }
+
+            // Update Index
+            currentIndex += fullText.length;
+        }
+
+        return requests;
+    }
+
+    // =====================
     // GOOGLE SHEETS
     // =====================
 
@@ -262,6 +414,37 @@ class GoogleService {
         }
 
         return createdEvents;
+    }
+
+    /**
+     * Check if a calendar event already exists for a task/deadline
+     * Used to prevent duplicates during sync
+     */
+    async findExistingEvent(user, meetingId, taskTitle) {
+        const auth = this.getOAuth2Client(user);
+        const calendar = google.calendar({ version: 'v3', auth });
+
+        try {
+            // Search for events with matching description (where we store meeting ID) 
+            // and title. Ideally, we store event ID in DB, but this is a fallback sync check.
+            const response = await calendar.events.list({
+                calendarId: 'primary',
+                q: `${meetingId} ${taskTitle}`,
+                timeMin: new Date().toISOString(), // Future events only
+                singleEvents: true
+            });
+
+            // Filter strictly by title to avoid loose matches
+            const match = response.data.items.find(e =>
+                e.summary === `📋 Deadline: ${taskTitle}` ||
+                e.summary === taskTitle
+            );
+
+            return match ? match.id : null;
+        } catch (error) {
+            console.error('Find Event Error:', error);
+            return null; // Fail safe
+        }
     }
 
     /**

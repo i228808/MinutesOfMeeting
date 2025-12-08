@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MeetingMinutes Streamer</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --surface: rgba(30, 41, 59, 0.7);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            width: 360px;
+            height: 500px;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Header */
+        header {
+            padding: 16px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--surface-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .user-badge {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ViewsContainer */
+        .views-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+            overflow-y: auto;
+        }
+
+        .view.active {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateX(0);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--surface-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, var(--danger-hover) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--surface-border);
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        /* Recording UI */
+        .recording-status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--surface-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .pulse-ring {
+            width: 12px;
+            height: 12px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .timer {
+            font-family: 'SF Mono', 'Roboto Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .meeting-title {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Transcript Area */
+        .transcript-container {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid var(--surface-border);
+            margin-bottom: 16px;
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            min-height: 150px;
+        }
+
+        .transcript-container:empty::after {
+            content: 'Waiting for speech...';
+            color: rgba(255, 255, 255, 0.2);
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+
+        .t-chunk {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .t-chunk.final {
+            color: white;
+        }
+
+        .t-chunk.partial {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Error/Info */
+        .info-box {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .info-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .info-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* Logo/Brand placeholder */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <span>MeetingMinutes</span>
+        </div>
+        <div id="user-display" class="user-badge">Not Logged In</div>
+    </header>
+
+    <div class="views-container">
+        <!-- LOGIN VIEW -->
+        <div id="login-view" class="view">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h3 style="margin: 0;">Welcome Back</h3>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">Sign in to your account</p>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email-input" placeholder="name@company.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password-input" placeholder="••••••••">
+            </div>
+
+            <div id="login-error" class="info-box info-error"></div>
+
+            <button id="login-btn" class="btn btn-primary">
+                Sign In
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- MAIN VIEW -->
+        <div id="main-view" class="view">
+            <!-- SETUP MODE -->
+            <div id="setup-container">
+                <div class="form-group">
+                    <label>Meeting Title</label>
+                    <input type="text" id="meeting-title" placeholder="e.g. Q4 Planning Sync">
+                </div>
+
+                <div id="perm-warning" class="info-box info-warning">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Microphone access needed</span>
+                        <button id="perm-btn"
+                            style="background:#f59e0b; color:black; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:600; font-size:11px;">Grant</button>
+                    </div>
+                </div>
+
+                <div style="flex:1"></div> <!- Spacer ->
+
+                    <div id="main-error" class="info-box info-error"></div>
+
+                    <button id="start-btn" class="btn btn-primary">
+                        <span style="width: 8px; height: 8px; background: white; border-radius: 50%;"></span>
+                        Start Recording
+                    </button>
+            </div>
+
+            <!-- RECORDING MODE -->
+            <div id="recording-container" style="display:none; height: 100%; flex-direction: column;">
+                <div class="recording-status">
+                    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                        <span class="pulse-ring"></span>
+                        <span
+                            style="font-weight: 600; color: var(--danger); font-size: 12px; letter-spacing: 0.05em;">LIVE
+                            RECORDING</span>
+                    </div>
+                    <div class="timer" id="timer">00:00:00</div>
+                    <div class="meeting-title" id="active-title-display">Meeting Title</div>
+                </div>
+
+                <label>Live Transcript</label>
+                <div class="transcript-container" id="transcript-log">
+                    <!-- Text will appear here -->
+                </div>
+
+                <button id="stop-btn" class="btn btn-danger" style="margin-top: 0;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="6" y="6" width="12" height="12"></rect>
+                    </svg>
+                    Stop & Analyze
+                </button>
+            </div>
+
+            <button id="logout-btn" class="btn btn-outline" style="margin-top: 16px;">Sign Out</button>
+        </div>
+    </div>
+
+    <!-- Load Socket.IO locally -->
+    <script src="socket.io.js"></script>
+    <script src="popup.js"></script>
+</body>
+
+</html>

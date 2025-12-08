@@ -7,7 +7,7 @@ let io;
 const initializeSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: process.env.CLIENT_URL || 'http://localhost:5173',
+            origin: '*', // Allow extension to connect
             methods: ['GET', 'POST'],
             credentials: true
         },
@@ -30,9 +30,9 @@ const initializeSocket = (server) => {
                 return next(new Error('User not found'));
             }
 
-            // Check if user has streaming access (BASIC or ULTRA tier)
+            // Check if user has streaming access (BASIC, PREMIUM, or ULTRA tier)
             if (user.subscription_tier === 'FREE') {
-                return next(new Error('Streaming requires BASIC or ULTRA subscription'));
+                return next(new Error('Streaming requires BASIC, PREMIUM, or ULTRA subscription'));
             }
 
             socket.user = user;

@@ -44,13 +44,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Sidebar */}
             <aside className="sidebar" style={{ width: '260px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
                 {/* Logo */}
-                <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: 'white', margin: 0 }}>
-                        <span style={{ color: '#fbbf24' }}>Meeting</span>Minutes
-                    </h1>
-                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', letterSpacing: '0.5px' }}>
-                        AI-POWERED AUTOMATION
-                    </p>
+                <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img src="/logo.svg" alt="Logo" style={{ width: '32px', height: '32px' }} />
+                    <div style={{ lineHeight: 1 }}>
+                        <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: 'white', margin: 0 }}>
+                            <span style={{ color: '#fbbf24' }}>Meeting</span>Minutes
+                        </h1>
+                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', letterSpacing: '0.5px' }}>
+                            AI-POWERED AUTOMATION
+                        </p>
+                    </div>
                 </div>
 
                 {/* Quick Actions */}
@@ -63,10 +66,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         <Upload size={16} style={{ marginRight: '8px' }} />
                         Upload Meeting
                     </Link>
-                    <button className="btn-secondary" style={{ width: '100%', fontSize: '13px', padding: '10px 16px' }}>
-                        <Mic size={16} style={{ marginRight: '8px' }} />
-                        Record Live
-                    </button>
+
+                    {/* Live Recorder Button - Only for paid tiers */}
+                    {['BASIC', 'PREMIUM', 'ULTRA'].includes(user.subscription_tier || 'FREE') && (
+                        <button
+                            onClick={() => alert("To use Live Recording:\n1. Open Chrome Extensions\n2. Load Unpacked -> select 'extension' folder\n3. Click 'Start Recording' in the popup!")}
+                            style={{
+                                width: '100%',
+                                fontSize: '13px',
+                                padding: '10px 16px',
+                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', // Emerald/Green for Action
+                                border: 'none',
+                                borderRadius: '8px',
+                                color: 'white',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            <Mic size={16} style={{ marginRight: '8px' }} />
+                            Install Live Recorder
+                        </button>
+                    )}
                 </div>
 
                 {/* Navigation */}

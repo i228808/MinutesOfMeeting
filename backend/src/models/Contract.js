@@ -35,6 +35,14 @@ const contractSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    google_doc_id: {
+        type: String,
+        default: null
+    },
+    google_doc_url: {
+        type: String,
+        default: null
+    },
     clauses: [{
         title: String,
         content: String,

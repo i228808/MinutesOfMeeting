@@ -8,6 +8,9 @@ const { asyncHandler, APIError } = require('../middleware/error.middleware');
 /**
  * Register a new user with email/password
  */
+/**
+ * Register a new user with email/password
+ */
 const register = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -26,13 +29,19 @@ const register = asyncHandler(async (req, res) => {
         throw new APIError('An account with this email already exists', 409);
     }
 
-    // Create new user
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Create new user (unverified)
     const user = await User.create({
         name,
         email: email.toLowerCase(),
         password,
         auth_provider: 'local',
-        email_verified: false
+        email_verified: false,
+        verification_otp: otp,
+        otp_expires: otpExpires
     });
 
     // Create FREE subscription
@@ -42,12 +51,64 @@ const register = asyncHandler(async (req, res) => {
         status: 'ACTIVE'
     });
 
-    // Generate JWT
-    const token = generateToken(user._id);
+    // Send OTP email
+    const notificationService = require('../services/notification.service');
+    await notificationService.sendOTP(email, otp);
 
     res.status(201).json({
         success: true,
-        message: 'Account created successfully',
+        message: 'Registration successful. Please check your email for verification code.',
+        need_verification: true,
+        email: user.email
+    });
+});
+
+/**
+ * Verify Email with OTP
+ */
+const verifyEmail = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        throw new APIError('Email and OTP are required', 400);
+    }
+
+    const user = await User.findOne({
+        email: email.toLowerCase()
+    }).select('+verification_otp +otp_expires');
+
+    if (!user) {
+        throw new APIError('User not found', 404);
+    }
+
+    if (user.email_verified) {
+        return res.json({ success: true, message: 'Email already verified' });
+    }
+
+    if (!user.verification_otp || !user.otp_expires) {
+        throw new APIError('No verification pending', 400);
+    }
+
+    if (user.verification_otp !== otp) {
+        throw new APIError('Invalid verification code', 400);
+    }
+
+    if (user.otp_expires < new Date()) {
+        throw new APIError('Verification code has expired', 400);
+    }
+
+    // Activate user
+    user.email_verified = true;
+    user.verification_otp = undefined;
+    user.otp_expires = undefined;
+    await user.save();
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.json({
+        success: true,
+        message: 'Email verified successfully',
         token,
         user: {
             id: user._id,
@@ -55,6 +116,44 @@ const register = asyncHandler(async (req, res) => {
             email: user.email,
             subscription_tier: user.subscription_tier
         }
+    });
+});
+
+/**
+ * Resend OTP
+ */
+const resendOTP = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        throw new APIError('Email is required', 400);
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+        throw new APIError('User not found', 404);
+    }
+
+    if (user.email_verified) {
+        throw new APIError('Email is already verified', 400);
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    user.verification_otp = otp;
+    user.otp_expires = otpExpires;
+    await user.save();
+
+    // Send email
+    const notificationService = require('../services/notification.service');
+    await notificationService.sendOTP(email, otp);
+
+    res.json({
+        success: true,
+        message: 'Verification code resent'
     });
 });
 
@@ -111,7 +210,9 @@ const googleAuth = passport.authenticate('google', {
         'profile',
         'email',
         'https://www.googleapis.com/auth/calendar',
-        'https://www.googleapis.com/auth/spreadsheets'
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/documents',
+        'https://www.googleapis.com/auth/drive.file'
     ],
     accessType: 'offline',
     prompt: 'consent'
@@ -168,6 +269,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
             subscription_tier: user.subscription_tier,
             auth_provider: user.auth_provider,
             email_verified: user.email_verified,
+            data_usage_consent: user.data_usage_consent,
             created_at: user.created_at
         },
         subscription: subscription ? {
@@ -222,15 +324,19 @@ const updateProfile = asyncHandler(async (req, res) => {
         user.name = name;
     }
 
+    if (req.body.data_usage_consent !== undefined) {
+        user.data_usage_consent = req.body.data_usage_consent;
+    }
+
     await user.save();
 
     res.json({
         success: true,
         user: {
-            id: user._id,
             name: user.name,
             email: user.email,
-            profile_image: user.profile_image
+            profile_image: user.profile_image,
+            data_usage_consent: user.data_usage_consent
         }
     });
 });
@@ -258,6 +364,8 @@ const deleteAccount = asyncHandler(async (req, res) => {
 module.exports = {
     register,
     login,
+    verifyEmail,
+    resendOTP,
     googleAuth,
     googleCallback,
     getCurrentUser,

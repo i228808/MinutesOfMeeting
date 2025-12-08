@@ -6,6 +6,8 @@ const { authenticate } = require('../middleware/auth.middleware');
 // Public routes - Email/Password auth
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-otp', authController.resendOTP);
 
 // Google OAuth routes
 router.get('/google', authController.googleAuth);

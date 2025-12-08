@@ -169,11 +169,15 @@ const endSession = asyncHandler(async (req, res) => {
 
         // Create a meeting transcript from the stream
         let meeting = null;
-        if (finalTranscript) {
+        // Always create a meeting record, even if transcript is empty/error
+        // so the user sees a result in their dashboard.
+        const effectiveTranscript = finalTranscript || '[No speech detected or recording error]';
+
+        if (true) { // Always enter
             meeting = await MeetingTranscript.create({
                 user_id: req.user._id,
                 title: title || `Live Meeting - ${new Date().toLocaleDateString()}`,
-                raw_transcript: finalTranscript,
+                raw_transcript: effectiveTranscript,
                 audio_duration_minutes: durationMinutes,
                 status: 'UPLOADED'
             });
@@ -183,6 +187,35 @@ const endSession = asyncHandler(async (req, res) => {
 
             // Increment upload usage
             await LimitService.incrementUsage(req.user._id, 'upload');
+
+            // --- TRIGGER ASYNC ANALYSIS ---
+            // We do this asynchronously so we don't block the end session response
+            (async () => {
+                try {
+                    console.log(`Starting post-stream analysis for meeting ${meeting._id}`);
+                    meeting.status = 'PROCESSING';
+                    await meeting.save();
+
+                    const analysis = await llmService.analyzeTranscript(effectiveTranscript);
+
+                    // Update meeting with analysis results
+                    meeting.summary = analysis.summary || '';
+                    meeting.processed_actors = analysis.actors || [];
+                    meeting.processed_roles = analysis.roles || [];
+                    meeting.processed_responsibilities = analysis.responsibilities || [];
+                    meeting.processed_deadlines = analysis.deadlines || [];
+                    meeting.key_decisions = analysis.key_decisions || [];
+                    meeting.status = 'COMPLETED';
+                    await meeting.save();
+
+                    console.log(`Analysis complete for meeting ${meeting._id}`);
+                } catch (analysisErr) {
+                    console.error(`Analysis failed for meeting ${meeting._id}:`, analysisErr);
+                    meeting.status = 'FAILED';
+                    meeting.error_message = analysisErr.message;
+                    await meeting.save();
+                }
+            })();
         }
 
         // Cleanup
@@ -207,7 +240,7 @@ const endSession = asyncHandler(async (req, res) => {
             duration_seconds: durationSeconds,
             transcript_length: finalTranscript.length,
             meeting_id: meeting?._id,
-            message: 'Streaming session ended successfully'
+            message: 'Streaming session ended successfully. Analysis started.'
         });
     } catch (error) {
         console.error('End session error:', error);

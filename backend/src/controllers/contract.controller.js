@@ -1,7 +1,7 @@
 const Contract = require('../models/Contract');
 const MeetingTranscript = require('../models/MeetingTranscript');
 const { asyncHandler } = require('../middleware/error.middleware');
-const { llmService, LimitService } = require('../services');
+const { llmService, LimitService, googleService } = require('../services');
 const { paginate, paginateResponse } = require('../utils/helpers');
 
 /**
@@ -392,6 +392,55 @@ const generateFromAnalysis = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Export contract to Google Docs
+ */
+const exportToDocs = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const contract = await Contract.findOne({
+        _id: id,
+        user_id: req.user._id
+    });
+
+    if (!contract) {
+        return res.status(404).json({ error: 'Contract not found' });
+    }
+
+    // Idempotency: Return existing doc if already exported
+    if (contract.google_doc_id) {
+        return res.json({
+            success: true,
+            doc: {
+                id: contract.google_doc_id,
+                url: contract.google_doc_url,
+                already_existed: true
+            }
+        });
+    }
+
+    // Create new doc
+    const docData = await googleService.createDoc(
+        req.user,
+        contract.title,
+        contract.draft_text // Content to insert
+    );
+
+    // Save ID and URL
+    contract.google_doc_id = docData.documentId;
+    contract.google_doc_url = docData.documentUrl;
+    await contract.save();
+
+    res.json({
+        success: true,
+        doc: {
+            id: contract.google_doc_id,
+            url: contract.google_doc_url,
+            already_existed: false
+        }
+    });
+});
+
 module.exports = {
     draftContract,
     updateContract,
@@ -400,5 +449,6 @@ module.exports = {
     listContracts,
     deleteContract,
     getRevisionHistory,
-    generateFromAnalysis
+    generateFromAnalysis,
+    exportToDocs
 };

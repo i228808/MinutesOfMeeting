@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { SmokeyBackground, LoginForm } from "@/components/ui/login-form";
 import { RegisterForm } from "@/components/ui/register-form";
+import { OTPForm } from "@/components/ui/otp-form";
 
 const API_URL = 'http://localhost:5000/api';
 
 export default function AuthPage() {
-    const [isLogin, setIsLogin] = useState(true);
+    const [view, setView] = useState<'login' | 'register' | 'otp'>('login');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [otpEmail, setOtpEmail] = useState("");
 
     const handleLogin = async (email: string, password: string) => {
         setLoading(true);
@@ -16,23 +18,16 @@ export default function AuthPage() {
         try {
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
 
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Login failed');
-            }
+            if (!response.ok) throw new Error(data.error || 'Login failed');
 
-            // Store token and redirect
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
-
-            // Redirect to dashboard (or home page)
             window.location.href = '/dashboard';
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Login failed');
@@ -48,28 +43,68 @@ export default function AuthPage() {
         try {
             const response = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password }),
             });
 
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Registration failed');
+            if (!response.ok) throw new Error(data.error || 'Registration failed');
+
+            if (data.need_verification) {
+                setOtpEmail(data.email);
+                setView('otp');
+            } else {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                window.location.href = '/dashboard';
             }
-
-            // Store token and redirect
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-
-            // Redirect to dashboard
-            window.location.href = '/dashboard';
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Registration failed');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleVerifyOTP = async (otp: string) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const response = await fetch(`${API_URL}/auth/verify-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: otpEmail, otp }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error || 'Verification failed');
+
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            window.location.href = '/dashboard';
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Verification failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendOTP = async () => {
+        try {
+            const response = await fetch(`${API_URL}/auth/resend-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: otpEmail }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to resend code');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to resend code');
         }
     };
 
@@ -119,17 +154,29 @@ export default function AuthPage() {
                 )}
 
                 {/* Form Container */}
-                {isLogin ? (
+                {view === 'login' && (
                     <LoginForm
                         onSubmit={handleLogin}
-                        onSwitchToRegister={() => { setIsLogin(false); setError(""); }}
+                        onSwitchToRegister={() => { setView('register'); setError(""); }}
                         loading={loading}
                     />
-                ) : (
+                )}
+
+                {view === 'register' && (
                     <RegisterForm
                         onSubmit={handleRegister}
-                        onSwitchToLogin={() => { setIsLogin(true); setError(""); }}
+                        onSwitchToLogin={() => { setView('login'); setError(""); }}
                         loading={loading}
+                    />
+                )}
+
+                {view === 'otp' && (
+                    <OTPForm
+                        email={otpEmail}
+                        onVerify={handleVerifyOTP}
+                        onResend={handleResendOTP}
+                        loading={loading}
+                        error={error}
                     />
                 )}
             </div>

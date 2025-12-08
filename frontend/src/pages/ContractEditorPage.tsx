@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import MDEditor from '@uiw/react-md-editor';
 import { useReactToPrint } from 'react-to-print';
 import {
@@ -116,24 +117,62 @@ export default function ContractEditorPage() {
         }
     };
 
-    const handleFinalize = async () => {
-        if (!confirm('Are you sure you want to finalize this contract? It cannot be edited after finalization.')) return;
+    const handleFinalize = () => {
+        toast('Finalize Contract?', {
+            description: 'This action cannot be undone. The contract will be locked.',
+            action: {
+                label: 'Finalize',
+                onClick: async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${API_URL}/contracts/${id}/finalize`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
 
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/contracts/${id}/finalize`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                fetchContract();
-            }
-        } catch (error) {
-            console.error('Failed to finalize:', error);
-        }
+                        if (res.ok) {
+                            fetchContract();
+                            toast.success('Contract finalized successfully');
+                        } else {
+                            toast.error('Failed to finalize contract');
+                        }
+                    } catch (error) {
+                        toast.error('Error finalizing contract');
+                    }
+                }
+            },
+            cancel: { label: 'Cancel' }
+        });
     };
 
+    const handleExportDocs = () => {
+        if (!contract) return;
+        toast('Export to Google Docs?', {
+            description: 'This will create a new Google Doc with the current content.',
+            action: {
+                label: 'Export',
+                onClick: async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${API_URL}/contracts/${id}/export-docs`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.doc?.url) {
+                            window.open(data.doc.url, '_blank');
+                            toast.success('Contract exported to Google Docs');
+                        } else {
+                            toast.error(data.error || 'Failed to export');
+                        }
+                    } catch (e) {
+                        toast.error('Error connecting to server');
+                    }
+                }
+            },
+            cancel: { label: 'Cancel' }
+        });
+    };
     const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: contract?.title || 'Contract'
@@ -197,6 +236,14 @@ export default function ContractEditorPage() {
                     <button onClick={() => handlePrint()} className="btn-secondary" style={{ width: 'auto', padding: '8px 12px' }}>
                         <Printer size={16} />
                     </button>
+                    <button
+                        onClick={handleExportDocs}
+                        className="btn-secondary"
+                        style={{ width: 'auto', padding: '8px 12px', color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.1)' }}
+                        title="Export to Google Docs"
+                    >
+                        <FileText size={16} />
+                    </button>
                     {!isFinalized && (
                         <>
                             <button onClick={handleSave} disabled={!hasChanges || saving} className="btn-secondary" style={{ width: 'auto', padding: '8px 16px', opacity: hasChanges ? 1 : 0.5 }}>
@@ -230,27 +277,29 @@ export default function ContractEditorPage() {
                 </div>
 
                 {/* History Sidebar */}
-                {showHistory && (
-                    <div style={{ width: '300px', borderLeft: '1px solid rgba(255,255,255,0.1)', overflow: 'auto', padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'white', margin: 0 }}>Version History</h3>
-                            <button onClick={() => setShowHistory(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>×</button>
-                        </div>
-                        {revisions.map((rev, i) => (
-                            <div key={i} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#fbbf24' }}>v{rev.version}</span>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{rev.changed_by}</span>
-                                </div>
-                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>{rev.notes}</p>
-                                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>
-                                    <Clock size={10} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-                                    {new Date(rev.changed_at).toLocaleString()}
-                                </p>
+                {
+                    showHistory && (
+                        <div style={{ width: '300px', borderLeft: '1px solid rgba(255,255,255,0.1)', overflow: 'auto', padding: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'white', margin: 0 }}>Version History</h3>
+                                <button onClick={() => setShowHistory(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>×</button>
                             </div>
-                        ))}
-                    </div>
-                )}
+                            {revisions.map((rev, i) => (
+                                <div key={i} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#fbbf24' }}>v{rev.version}</span>
+                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{rev.changed_by}</span>
+                                    </div>
+                                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>{rev.notes}</p>
+                                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>
+                                        <Clock size={10} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                                        {new Date(rev.changed_at).toLocaleString()}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                }
             </div>
 
             {/* Hidden print content - formatted nicely */}

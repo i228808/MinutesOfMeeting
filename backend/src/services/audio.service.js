@@ -113,9 +113,15 @@ class AudioService {
         let totalSize = 0;
         const CHUNK_THRESHOLD = 100000; // ~100KB before processing
         const self = this;
+        let headerChunk = null; // Store the first chunk (contains WebM header)
 
         return {
             addChunk: (chunk) => {
+                // The first chunk ever received contains the Header info
+                if (!headerChunk) {
+                    headerChunk = chunk;
+                }
+
                 chunks.push(chunk);
                 totalSize += chunk.length;
                 return totalSize >= CHUNK_THRESHOLD;
@@ -124,7 +130,30 @@ class AudioService {
             process: async function () {
                 if (chunks.length === 0) return null;
 
-                const combinedBuffer = Buffer.concat(chunks);
+                let combinedBuffer;
+
+                // If this batch includes the headerChunk (it's the first batch), simple concat
+                if (chunks.includes(headerChunk)) {
+                    combinedBuffer = Buffer.concat(chunks);
+                } else {
+                    // Subsequent batches: Prepend the header chunk so ffmpeg can parse it
+                    // Note: This repeats the first ~1s of audio, but prevents crashes.
+                    // Ideal fix would be a proper WebM parser, but this works for MVP.
+                    if (headerChunk) {
+                        combinedBuffer = Buffer.concat([headerChunk, ...chunks]);
+                    } else {
+                        combinedBuffer = Buffer.concat(chunks);
+                    }
+                }
+
+                // Minimum size check (header is ~500 bytes, so < 1KB is basically empty)
+                if (combinedBuffer.length < 1024) {
+                    console.log(`Skipping tiny buffer: ${combinedBuffer.length} bytes`);
+                    chunks.length = 0;
+                    totalSize = 0;
+                    return null;
+                }
+
                 chunks.length = 0;
                 totalSize = 0;
 
@@ -144,6 +173,7 @@ class AudioService {
             clear: () => {
                 chunks.length = 0;
                 totalSize = 0;
+                headerChunk = null; // Reset header for new session
             }
         };
     }

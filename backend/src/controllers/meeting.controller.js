@@ -297,6 +297,18 @@ const exportToSheets = asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'Meeting must be processed before export' });
     }
 
+    // Idempotency: Open existing sheet if already exported
+    if (meeting.sheets_exported && meeting.sheets_id) {
+        return res.json({
+            success: true,
+            spreadsheet: {
+                id: meeting.sheets_id,
+                url: `https://docs.google.com/spreadsheets/d/${meeting.sheets_id}`,
+                already_existed: true
+            }
+        });
+    }
+
     // Create new spreadsheet
     const spreadsheet = await googleService.createSpreadsheet(
         req.user,
@@ -523,6 +535,117 @@ const confirmMeeting = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Update meeting details (Edit) and sync changes to Calendar/Reminders
+ */
+const updateMeeting = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const {
+        title,
+        summary,
+        actors,
+        roles,
+        responsibilities,
+        processed_responsibilities,
+        deadlines,
+        processed_deadlines,
+        key_decisions
+    } = req.body;
+
+    const meeting = await MeetingTranscript.findOne({
+        _id: id,
+        user_id: req.user._id
+    });
+
+    if (!meeting) {
+        return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    // Update fields if provided
+    // Use alias if main key is missing
+    const responsibilitiesToUse = responsibilities || processed_responsibilities;
+    const deadlinesToUse = deadlines || processed_deadlines;
+
+    if (title) meeting.title = title;
+    if (summary) meeting.summary = summary;
+    if (actors) meeting.processed_actors = actors;
+    if (roles) meeting.processed_roles = roles;
+    if (responsibilitiesToUse) meeting.processed_responsibilities = responsibilitiesToUse;
+    if (deadlinesToUse) meeting.processed_deadlines = deadlinesToUse;
+    if (key_decisions) meeting.key_decisions = key_decisions;
+
+    await meeting.save();
+
+    // Logic to sync Calendar Events and Reminders if Deadlines changed
+    // Strategy: Delete existing for this meeting and re-create based on new deadlines
+    // This handles additions, removals, and updates robustly.
+
+    if (deadlines) {
+        const Reminder = require('../models/Reminder');
+
+        // 1. Delete existing
+        await CalendarEvent.deleteMany({ meeting_id: meeting._id });
+        await Reminder.deleteMany({ meeting_id: meeting._id });
+
+        // 2. Re-create from new deadlines
+        const createdEvents = [];
+        const createdReminders = [];
+
+        for (const deadline of deadlines) {
+            if (!deadline.deadline || !deadline.task) continue;
+
+            const deadlineDate = new Date(deadline.deadline);
+            if (isNaN(deadlineDate.getTime())) continue;
+
+            // Calendar Event
+            const event = await CalendarEvent.create({
+                user_id: req.user._id,
+                meeting_id: meeting._id,
+                title: deadline.task,
+                description: `Assigned to: ${deadline.actor || 'Unassigned'}\nFrom meeting: ${meeting.title}`,
+                start_time: deadlineDate,
+                end_time: new Date(deadlineDate.getTime() + 60 * 60 * 1000),
+                all_day: true,
+                type: 'deadline',
+                color: '#f59e0b'
+            });
+            createdEvents.push(event);
+
+            // Reminder (1 day before)
+            const reminderDate = new Date(deadlineDate.getTime() - 24 * 60 * 60 * 1000);
+            if (reminderDate > new Date()) {
+                const reminder = await Reminder.create({
+                    user_id: req.user._id,
+                    meeting_id: meeting._id,
+                    task: deadline.task,
+                    message: `Reminder: "${deadline.task}" is due tomorrow. Assigned to: ${deadline.actor || 'Unassigned'}`,
+                    remind_at: reminderDate,
+                    reminder_type: 'EMAIL',
+                    status: 'PENDING'
+                });
+                createdReminders.push(reminder);
+            }
+        }
+        console.log(`Synced: Re-created ${createdEvents.length} events and ${createdReminders.length} reminders for meeting ${meeting._id}`);
+    }
+
+    res.json({
+        success: true,
+        message: 'Meeting updated and synced',
+        meeting: {
+            id: meeting._id,
+            title: meeting.title,
+            status: meeting.status,
+            summary: meeting.summary,
+            actors: meeting.processed_actors,
+            roles: meeting.processed_roles,
+            responsibilities: meeting.processed_responsibilities,
+            deadlines: meeting.processed_deadlines,
+            key_decisions: meeting.key_decisions
+        }
+    });
+});
+
 module.exports = {
     uploadTranscript,
     processTranscript,
@@ -532,5 +655,6 @@ module.exports = {
     exportToSheets,
     createCalendarEvents,
     analyzeOnly,
-    confirmMeeting
+    confirmMeeting,
+    updateMeeting
 };

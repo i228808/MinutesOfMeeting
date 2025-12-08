@@ -42,6 +42,40 @@ class NotificationService {
   }
 
   /**
+   * Send OTP verification email
+   */
+  async sendOTP(email, otp) {
+    const subject = `🔐 Your Verification Code: ${otp}`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f5; padding: 20px; }
+    .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .code { font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #d97706; background: #fffbeb; padding: 15px; border-radius: 8px; margin: 20px 0; display: inline-block; }
+    .footer { font-size: 12px; color: #71717a; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="color: #18181b; margin-top: 0;">Verify Your Email</h1>
+    <p style="color: #52525b;">Use the code below to complete your registration.</p>
+    
+    <div class="code">${otp}</div>
+    
+    <p style="color: #71717a; font-size: 14px;">This code expires in 10 minutes.</p>
+    
+    <div class="footer">If you didn't request this, please ignore this email.</div>
+  </div>
+</body>
+</html>
+`;
+    return await this.sendEmail(email, subject, html);
+  }
+
+  /**
    * Send reminder email
    */
   async sendReminderEmail(user, reminder) {
