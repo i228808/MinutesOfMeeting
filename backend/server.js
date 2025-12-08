@@ -4,6 +4,7 @@ const app = require('./src/app');
 const connectDB = require('./src/config/db');
 const { initializeSocket } = require('./src/config/socket');
 const { startReminderCron } = require('./src/jobs/reminder.cron');
+const initRagCron = require('./src/cron/rag.cron');
 
 const PORT = process.env.PORT || 5000;
 
@@ -22,6 +23,10 @@ const startServer = async () => {
         // Start reminder cron job
         startReminderCron();
         console.log('✅ Reminder cron job started');
+
+        // Start RAG training cron job
+        initRagCron();
+        console.log('✅ Weekly RAG training cron job started');
 
         server.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);

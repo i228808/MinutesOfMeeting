@@ -1,0 +1,193 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{booktabs}
+
+% Fix Overfull hbox issues
+\sloppy
+\emergencystretch 3em
+
+% Fix missing listings languages
+\lstloadlanguages{Python}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% Code snippet styling
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\title{
+    \vspace{2cm}
+    \textbf{\Huge AI-Powered Meeting Minutes \& \\ Contract Automation Platform} \\
+    \vspace{1cm}
+    \large \textbf{Course:} Natural Language Processing (NLP) \\
+    \vspace{0.5cm}
+    \textit{Final Project Report}
+}
+\author{\textbf{Abdullah Mansoor}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\begin{abstract}
+This report documents the design and implementation of an integrated AI platform capable of transcribing meeting audio, extracting key insights, and autonomously generating legally compliant contracts. The system leverages state-of-the-art Natural Language Processing (NLP) techniques, including OpenAI's Whisper for Speech-to-Text (STT) and a custom Retrieval-Augmented Generation (RAG) pipeline for legal drafting. By utilizing a hierarchical chunking strategy and local vector embeddings (SentenceTransformers), the system ensures high-precision retrieval of legal precedents while preserving data privacy. The platform is fully containerized using Docker and features a continuous learning loop that refines its knowledge base over time.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\subsection{Problem Statement}
+In the corporate legal domain, translating verbal agreements made during meetings into formal contracts is a manual, error-prone, and time-consuming process. Misinterpretation of legal context or failure to recall specific clauses can lead to non-compliant or incomplete agreements. Furthermore, generic Large Language Models (LLMs) often hallucinate legal provisions or generate drafts inconsistent with regional laws.
+
+\subsection{Proposed Solution}
+We present a unified workspace that:
+\begin{itemize}
+    \item Transcribes audio meetings in real time.
+    \item Summarizes intent, decisions, and action items.
+    \item Retrieves specific legal clauses from a verified database using RAG.
+    \item Generates contracts that are contextually accurate and legally grounded.
+\end{itemize}
+
+\section{System Architecture}
+
+The system follows a microservices architecture to ensure scalability and separation of compute-heavy AI tasks from I/O-bound web services.
+
+\subsection{1. Frontend Module (Client Layer)}
+Built on \textbf{React 18} and \textbf{Vite}, the frontend provides an interactive workspace.
+\begin{itemize}
+    \item \textbf{Contract Editor:} A split-pane Markdown editor (\texttt{@uiw/react-md-editor}) allowing users to review and modify AI-generated drafts.
+    \item \textbf{Real-Time Notifications:} Integrated \texttt{sonner} for asynchronous user feedback during long-running tasks.
+    \item \textbf{State Management:} Uses React Context API for managing authentication and workspace data.
+\end{itemize}
+
+\subsection{2. Backend Module (API Layer)}
+The \textbf{Node.js / Express} backend acts as the API Gateway.
+\begin{itemize}
+    \item \textbf{Auth Service:} Manages Google OAuth 2.0 and JWT-based user sessions.
+    \item \textbf{Contract Controller:} Coordinates drafting workflows by interacting with the database, utility server, and LLM service.
+    \item \textbf{Cron Jobs:} Implements \texttt{node-cron} to automate tasks such as the weekly RAG ingestion process.
+\end{itemize}
+
+\subsection{3. Utility Engine (AI Layer)}
+A high-performance \textbf{Python Flask} server responsible for all AI and NLP operations.
+\begin{itemize}
+    \item \textbf{Transcription:} Uses \texttt{openai-whisper} models for accurate speech-to-text conversion.
+    \item \textbf{Text Processing:} Employs \texttt{pypdfium2} for reliable text extraction from uploaded PDFs.
+    \item \textbf{Vectorization:} Uses \texttt{sentence-transformers/all-MiniLM-L6-v2} on GPU (CUDA) to compute 384-dimensional embeddings.
+\end{itemize}
+
+\section{Methodology: RAG \& NLP Implementation}
+
+\subsection{Privacy-First Local RAG}
+Unlike cloud-dependent systems that rely on external embedding APIs, this project implements a completely local RAG pipeline, ensuring that sensitive legal data remains within the user's infrastructure.
+
+\subsection{Hierarchical Chunking Strategy}
+Legal documents exhibit a hierarchical structure (Section → Clause → Sub-clause). Standard fixed-size window chunking disrupts this structure and lowers retrieval accuracy.
+
+We implemented a \textbf{three-level hierarchical chunker}:
+\begin{enumerate}
+    \item \textbf{Level 1 (Clause Extraction):} Uses regex detection (e.g., ``2.1'', ``Section 5(a)'') to identify clause boundaries—the smallest retrieval unit.
+    \item \textbf{Level 2 (Section Aggregation):} Groups clauses under section headers (e.g., ``Termination'') for broader semantic context.
+    \item \textbf{Level 3 (Semantic Window):} A fallback sliding window (512 tokens) used when documents lack proper structure.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption=Hierarchical Chunking Logic]
+# utilities/chunker.py
+def create_hierarchical_chunks(parsed_structure, doc_id):
+    chunks = []
+    for section in parsed_structure:
+        # 1. Section Level chunk
+        chunks.append({
+            "text": section["text"],
+            "chunk_level": 2,
+            "section": section["title"]
+        })
+        # 2. Clause Level chunks
+        for clause in section["clauses"]:
+            chunks.append({
+                "text": clause["text"],
+                "chunk_level": 1,
+                "clause_number": clause["number"]
+            })
+    return chunks
+\end{lstlisting}
+
+\subsection{Vector Storage \& Retrieval}
+\begin{itemize}
+    \item \textbf{Database:} \textbf{Weaviate}, deployed via Docker.
+    \item \textbf{Schema:} A \texttt{ContractChunk} class enriched with metadata fields such as \texttt{contract\_type} and \texttt{region}.
+    \item \textbf{Search:} Supports hybrid search combining metadata filtering and vector similarity matching.
+\end{itemize}
+
+\section{Continuous Learning Pipeline}
+
+A continuous learning mechanism ensures that the system evolves as new legal documents become available.
+
+\begin{enumerate}
+    \item \textbf{Data Collection:} A backend cron job (\texttt{rag.cron.js}) runs every Sunday at midnight.
+    \item \textbf{Filtering:} Retrieves contracts from MongoDB belonging to users who opted into \texttt{data\_usage\_sharing}.
+    \item \textbf{Processing:} Contracts are submitted to the \texttt{/process\_contracts} endpoint on the utility server.
+    \item \textbf{Ingestion:} Documents are cleaned, chunked, embedded, and upserted into Weaviate.
+\end{enumerate}
+
+\section{Deployment \& Infrastructure}
+
+The entire platform is containerized for consistency and ease of deployment.
+
+\subsection{Docker Orchestration}
+A \texttt{docker-compose.yml} file defines the multi-container stack:
+\begin{itemize}
+    \item \textbf{Frontend:} Serves the UI on port 5173.
+    \item \textbf{Backend:} Runs on port 5000 and communicates with MongoDB and Weaviate.
+    \item \textbf{Utility Engine:} Runs on port 5001 with GPU access through the \texttt{nvidia} runtime.
+\end{itemize}
+
+\begin{lstlisting}[language=yaml]
+deploy:
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: 1
+          capabilities: [gpu]
+\end{lstlisting}
+
+\section{Conclusion}
+This project demonstrates a full-stack AI application addressing real-world legal automation challenges. By combining microservices engineering with advanced NLP techniques (hierarchical chunking, RAG, Whisper transcription), the platform is capable of generating contextually and legally accurate contracts. The system is built for continuous improvement, growing more intelligent and precise with each user interaction.
+
+\end{document}

@@ -216,7 +216,14 @@ Return ONLY valid JSON array, no markdown:`;
     /**
      * Generate a contract draft based on meeting data
      */
-    async generateContract(meetingData, contractType = 'GENERAL') {
+    async generateContract(meetingData, contractType = 'GENERAL', context = '') {
+        console.log(`[LLM Service] generateContract called. ContractType: ${contractType}`);
+        if (context) {
+            console.log(`[LLM Service] RAG Context received. Length: ${context.length} chars`);
+        } else {
+            console.log(`[LLM Service] No RAG Context provided.`);
+        }
+
         const contractPrompts = {
             NDA: 'Non-Disclosure Agreement',
             SERVICE_AGREEMENT: 'Service Agreement',
@@ -242,6 +249,8 @@ ${JSON.stringify(meetingData.deadlines || [], null, 2)}
 KEY DECISIONS:
 ${JSON.stringify(meetingData.key_decisions || [], null, 2)}
 
+${context ? `RELEVANT LEGAL CONTEXT & SIMILAR CLAUSES (Use these as reference):\n${context}\n` : ''}
+
 Generate a complete, professional contract with:
 1. Title
 2. Date
@@ -256,6 +265,10 @@ Generate a complete, professional contract with:
 
 Use proper legal language but keep it understandable.
 Return the contract as plain text (not markdown).`;
+
+        if (context) {
+            console.log(`[LLM Service] RAG Context injected into prompt.`);
+        }
 
         try {
             return await this.makeRequest([
@@ -325,8 +338,14 @@ Return only the summary text, no formatting.`;
             region,
             contract_type,
             title,
-            custom_instructions
+            custom_instructions,
+            context
         } = params;
+
+        console.log(`[LLM Service] generateContractFromTranscript called.`);
+        if (context) {
+            console.log(`[LLM Service] RAG Context received for transcript generation.`);
+        }
 
         const regionLawContext = this.getRegionLegalContext(region);
 
@@ -345,6 +364,8 @@ CONTRACT ELEMENTS DETECTED:
 CONTRACT TYPE: ${contract_type || 'SERVICE_AGREEMENT'}
 JURISDICTION/REGION: ${region || 'General'}
 ${regionLawContext}
+
+${context ? `RELEVANT LEGAL CONTEXT & SIMILAR CLAUSES (Use these as reference):\n${context}\n` : ''}
 
 ${custom_instructions ? `ADDITIONAL INSTRUCTIONS: ${custom_instructions}` : ''}
 

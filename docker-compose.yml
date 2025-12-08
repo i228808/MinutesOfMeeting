@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # --- UI Layer ---
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+
+  # --- API Layer ---
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/meeting-assistant
+      - CLIENT_URL=http://localhost:5173
+      # Add other ENV vars here or use env_file
+    depends_on:
+      - mongo
+      - utilities
+
+  # --- AI/Utility Layer ---
+  utilities:
+    build: ./utilities
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./utilities:/app
+      - ./RAG_DATA:/app/RAG_DATA # Mount data for processing
+    environment:
+      - FLASK_ENV=development
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # --- Data Layer ---
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  weaviate:
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - '8081'
+      - --scheme
+      - http
+    image: semitechnologies/weaviate:1.24.1
+    ports:
+      - 8081:8081
+      - 50052:50052
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none' # We use local embeddings
+      ENABLE_MODULES: ''
+      CLUSTER_HOSTNAME: 'node1'
+
+volumes:
+  mongo_data:
+  weaviate_data:

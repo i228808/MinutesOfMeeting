@@ -58,16 +58,62 @@ const draftContract = asyncHandler(async (req, res) => {
         };
     }
 
+    // --- RAG Retrieval from Utility Server ---
+    // --- RAG Retrieval from Utility Server ---
+    let ragContext = "";
+    try {
+        // Use custom instructions, OR meeting summary, OR generic type
+        let query = custom_instructions;
+        if (!query && meetingData && meetingData.summary) {
+            query = `${contract_type} clauses regarding: ${meetingData.summary}`;
+        }
+        if (!query) {
+            query = `Standard clauses for ${contract_type} agreement`;
+        }
+
+        console.log(`[RAG] Attempting to query Utility Server at http://localhost:5001/query...`);
+        console.log(`[RAG] Query: "${query}"`);
+
+        // Use axios instead of fetch for reliability
+        const axios = require('axios');
+        const ragRes = await axios.post('http://localhost:5001/query', {
+            query: query,
+            limit: 3
+        });
+
+        if (ragRes.data && ragRes.data.results) {
+            const results = ragRes.data.results;
+            if (results.length > 0) {
+                console.log(`[RAG] Success! Retrieved ${results.length} relevant clauses.`);
+                ragContext = results.map((r, i) =>
+                    `[Reference Clause ${i + 1} - ${r.contract_type || 'Doc'} (${r.section || 'N/A'})]:\n${r.text}`
+                ).join('\n\n');
+            } else {
+                console.log(`[RAG] Success, but no results found.`);
+            }
+        }
+    } catch (err) {
+        console.error("[RAG] ERROR: Failed to query Utility Server:", err.message);
+        if (err.code === 'ECONNREFUSED') {
+            console.error("[RAG] Is the utility server running on port 5001?");
+        }
+    }
+
     // Generate contract draft with LLM
     let draftText;
     if (custom_instructions) {
-        // Use custom instructions
+        // Use custom instructions + RAG Context
+        const enrichedInstructions = custom_instructions +
+            (ragContext ? `\n\nRELEVANT LEGAL CLAUSES/CONTEXT:\n${ragContext}` : '') +
+            '\n\nMeeting Data:\n' + JSON.stringify(meetingData);
+
         draftText = await llmService.improveContract(
             '', // No existing text
-            custom_instructions + '\n\nMeeting Data:\n' + JSON.stringify(meetingData)
+            enrichedInstructions
         );
     } else {
-        draftText = await llmService.generateContract(meetingData, contract_type);
+        // Pass Meeting Data + RAG Context
+        draftText = await llmService.generateContract(meetingData, contract_type, ragContext);
     }
 
     // Create contract record
@@ -342,6 +388,39 @@ const generateFromAnalysis = asyncHandler(async (req, res) => {
         });
     }
 
+    // --- RAG Retrieval from Utility Server ---
+    let ragContext = "";
+    try {
+        const query = custom_instructions || `${contract_type} clauses for ${region} region`;
+
+        console.log(`[RAG] Attempting to query Utility Server at http://localhost:5001/query...`);
+        console.log(`[RAG] Query: "${query}"`);
+
+        // Use axios instead of fetch for reliability
+        const axios = require('axios');
+        const ragRes = await axios.post('http://localhost:5001/query', {
+            query: query,
+            limit: 3
+        });
+
+        if (ragRes.data && ragRes.data.results) {
+            const results = ragRes.data.results;
+            if (results.length > 0) {
+                console.log(`[RAG] Success! Retrieved ${results.length} relevant clauses.`);
+                ragContext = results.map((r, i) =>
+                    `[Reference Clause ${i + 1} - ${r.contract_type || 'Doc'} (${r.section || 'N/A'})]:\n${r.text}`
+                ).join('\n\n');
+            } else {
+                console.log(`[RAG] Success, but no results found.`);
+            }
+        }
+    } catch (err) {
+        console.error("[RAG] ERROR: Failed to query Utility Server:", err.message);
+        if (err.code === 'ECONNREFUSED') {
+            console.error("[RAG] Is the utility server running on port 5001?");
+        }
+    }
+
     // Generate contract with LLM
     const draftText = await llmService.generateContractFromTranscript({
         transcript,
@@ -349,7 +428,8 @@ const generateFromAnalysis = asyncHandler(async (req, res) => {
         region: region || 'General',
         contract_type: contract_type || 'SERVICE_AGREEMENT',
         title,
-        custom_instructions
+        custom_instructions,
+        context: ragContext // Pass RAG context here
     });
 
     // Extract parties from contract elements

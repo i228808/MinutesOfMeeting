@@ -4,3 +4,6 @@ __pycache__
 .env
 extension.crx
 extension.pem
+RAG_DATA
+rag.md
+chunks.jsonl
