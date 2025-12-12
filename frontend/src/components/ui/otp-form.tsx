@@ -8,13 +8,14 @@ interface OTPFormProps {
     onResend: () => Promise<void>;
     loading?: boolean;
     error?: string;
+    initialResendTimer?: number;
 }
 
-export function OTPForm({ email, description, onVerify, onResend, loading, error }: OTPFormProps) {
+export function OTPForm({ email, description, onVerify, onResend, loading, error, initialResendTimer = 30 }: OTPFormProps) {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [resendLoading, setResendLoading] = useState(false);
-    const [resendTimer, setResendTimer] = useState(30);
+    const [resendTimer, setResendTimer] = useState(initialResendTimer);
 
     useEffect(() => {
         if (resendTimer > 0) {
@@ -156,7 +157,7 @@ export function OTPForm({ email, description, onVerify, onResend, loading, error
                             setResendLoading(true);
                             await onResend();
                             setResendLoading(false);
-                            setResendTimer(30);
+                            setResendTimer(initialResendTimer);
                         }}
                         disabled={resendTimer > 0 || resendLoading}
                         style={{

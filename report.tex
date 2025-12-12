@@ -1,193 +1,441 @@
-\documentclass[12pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage{geometry}
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{adjustbox}
 \usepackage{graphicx}
-\usepackage{titlesec}
-\usepackage{hyperref}
+\usepackage{microtype}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{float}
-\usepackage{caption}
-\usepackage{booktabs}
+\usepackage{enumitem}
 
-% Fix Overfull hbox issues
-\sloppy
-\emergencystretch 3em
+\setlength{\emergencystretch}{2em}
 
-% Fix missing listings languages
-\lstloadlanguages{Python}
-
-\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
-
-% Code snippet styling
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
-
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,
-    breaklines=true,
-    captionpos=b,
-    keepspaces=true,
-    numbers=left,
-    numbersep=5pt,
-    showspaces=false,
-    showstringspaces=false,
-    showtabs=false,
-    tabsize=2
+\hypersetup{
+  pdftitle={CS4063 NLP (Development Track) -- AI Meeting \& Contract Assistant},
+  pdfauthor={Abdullah Mansoor, Ali Haider, Muhammad Tabish, Ahmad Masood, Rehab Imtiaz, Uswa Zafar}
 }
-\lstset{style=mystyle}
 
-\title{
-    \vspace{2cm}
-    \textbf{\Huge AI-Powered Meeting Minutes \& \\ Contract Automation Platform} \\
-    \vspace{1cm}
-    \large \textbf{Course:} Natural Language Processing (NLP) \\
-    \vspace{0.5cm}
-    \textit{Final Project Report}
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codeframe}{RGB}{220,220,220}
+\definecolor{codekw}{RGB}{36,82,152}
+\definecolor{codestr}{RGB}{154,49,35}
+\definecolor{codecom}{RGB}{92,92,92}
+
+\lstdefinestyle{proj}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecom}\itshape,
+  stringstyle=\color{codestr},
+  showstringspaces=false
 }
-\author{\textbf{Abdullah Mansoor}}
-\date{\today}
+
+\newcommand{\codepath}[1]{\texttt{\url{#1}}}
+
+\title{\vspace{-1.2em}\textbf{CS4063 -- Natural Language Processing (Development Track)}\\
+\large Course Project Report: AI Meeting \& Contract Assistant}
+\author{%
+\begin{tabular}{c}
+\textbf{Abdullah Mansoor} \\
+Ali Haider \\
+Muhammad Tabish \\
+Ahmad Masood \\
+Rehab Imtiaz \\
+Uswa Zafar \\
+\vspace{0.25em}
+\normalsize Instructor: Sir Omer Beg
+\end{tabular}
+}
+\date{December 12, 2025}
 
 \begin{document}
-
 \maketitle
-\thispagestyle{empty}
-\newpage
-
-\begin{abstract}
-This report documents the design and implementation of an integrated AI platform capable of transcribing meeting audio, extracting key insights, and autonomously generating legally compliant contracts. The system leverages state-of-the-art Natural Language Processing (NLP) techniques, including OpenAI's Whisper for Speech-to-Text (STT) and a custom Retrieval-Augmented Generation (RAG) pipeline for legal drafting. By utilizing a hierarchical chunking strategy and local vector embeddings (SentenceTransformers), the system ensures high-precision retrieval of legal precedents while preserving data privacy. The platform is fully containerized using Docker and features a continuous learning loop that refines its knowledge base over time.
-\end{abstract}
+\vspace{-1.0em}
 
 \tableofcontents
-\newpage
+\vspace{-0.75em}
 
-\section{Introduction}
+\section*{Abstract}
+This project implements an end-to-end system that turns meeting audio (uploaded files or live browser-captured streams) into structured meeting artifacts (summary, roles, action items, deadlines) and optionally drafts contracts grounded in retrieved legal clauses. The system exists to reduce the manual overhead and accuracy loss of translating unstructured spoken conversations into executable deliverables (task tracking, calendar reminders) and legally formatted documents. Technically, it is a full-stack product with a React client and Chrome extension, a Node.js/Express REST backend, and a Python/Flask ``utility'' server for Speech-to-Text (Whisper) and retrieval-augmented generation (RAG) over a Weaviate vector store. LLM inference is integrated via OpenRouter's chat completion API, and RAG is implemented as a lightweight retrieval call that injects top-matched clauses into contract-generation prompts.
 
-\subsection{Problem Statement}
-In the corporate legal domain, translating verbal agreements made during meetings into formal contracts is a manual, error-prone, and time-consuming process. Misinterpretation of legal context or failure to recall specific clauses can lead to non-compliant or incomplete agreements. Furthermore, generic Large Language Models (LLMs) often hallucinate legal provisions or generate drafts inconsistent with regional laws.
+\subsection*{Repository}
+\textbf{GitHub:} \url{https://github.com/i228808/MinutesOfMeeting}
 
-\subsection{Proposed Solution}
-We present a unified workspace that:
-\begin{itemize}
-    \item Transcribes audio meetings in real time.
-    \item Summarizes intent, decisions, and action items.
-    \item Retrieves specific legal clauses from a verified database using RAG.
-    \item Generates contracts that are contextually accurate and legally grounded.
+\subsection*{Key contributions (what is actually implemented)}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{End-to-end meeting pipeline}: upload audio or stream chunks, transcribe via a local utility service, and extract structured artifacts (summary, roles, action items, deadlines).
+  \item \textbf{RAG-backed contract drafting}: clause chunking + embedding + Weaviate retrieval, with retrieved context injected into contract generation prompts.
+  \item \textbf{Automation hooks}: internal reminders and calendar records; optional Google Workspace exports (Docs/Sheets/Calendar) via OAuth.
+  \item \textbf{Engineering rigor}: unit tests for JavaScript and Python with enforced coverage thresholds, plus automated CI on push/PR via GitHub Actions.
 \end{itemize}
 
-\section{System Architecture}
+\section{Product Definition (grounded in reality)}
+\subsection*{Problem statement and user pain}
+Teams frequently leave meetings with incomplete minutes, missed deadlines, and inconsistent follow-ups; contract drafting after a meeting is slow and error-prone because details are scattered across transcripts, notes, and templates. This repository provides a workflow to: (i) capture audio, (ii) extract structured responsibilities and dates, (iii) create reminders and calendar entries, and (iv) draft a contract with clause-level grounding from a local vector database.
 
-The system follows a microservices architecture to ensure scalability and separation of compute-heavy AI tasks from I/O-bound web services.
-
-\subsection{1. Frontend Module (Client Layer)}
-Built on \textbf{React 18} and \textbf{Vite}, the frontend provides an interactive workspace.
-\begin{itemize}
-    \item \textbf{Contract Editor:} A split-pane Markdown editor (\texttt{@uiw/react-md-editor}) allowing users to review and modify AI-generated drafts.
-    \item \textbf{Real-Time Notifications:} Integrated \texttt{sonner} for asynchronous user feedback during long-running tasks.
-    \item \textbf{State Management:} Uses React Context API for managing authentication and workspace data.
+\subsection*{Target users and personas}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Operations / Project lead}: wants reliable action items and deadlines; uses reminders and calendar sync.
+  \item \textbf{Founder / Sales}: wants quick conversion of negotiated terms into a draft agreement.
+  \item \textbf{Analyst / Assistant}: uploads recorded calls, exports structured minutes to Google Sheets.
+  \item \textbf{Power user (browser extension)}: streams meeting audio in real time for live transcription and post-call analysis.
 \end{itemize}
 
-\subsection{2. Backend Module (API Layer)}
-The \textbf{Node.js / Express} backend acts as the API Gateway.
-\begin{itemize}
-    \item \textbf{Auth Service:} Manages Google OAuth 2.0 and JWT-based user sessions.
-    \item \textbf{Contract Controller:} Coordinates drafting workflows by interacting with the database, utility server, and LLM service.
-    \item \textbf{Cron Jobs:} Implements \texttt{node-cron} to automate tasks such as the weekly RAG ingestion process.
-\end{itemize}
-
-\subsection{3. Utility Engine (AI Layer)}
-A high-performance \textbf{Python Flask} server responsible for all AI and NLP operations.
-\begin{itemize}
-    \item \textbf{Transcription:} Uses \texttt{openai-whisper} models for accurate speech-to-text conversion.
-    \item \textbf{Text Processing:} Employs \texttt{pypdfium2} for reliable text extraction from uploaded PDFs.
-    \item \textbf{Vectorization:} Uses \texttt{sentence-transformers/all-MiniLM-L6-v2} on GPU (CUDA) to compute 384-dimensional embeddings.
-\end{itemize}
-
-\section{Methodology: RAG \& NLP Implementation}
-
-\subsection{Privacy-First Local RAG}
-Unlike cloud-dependent systems that rely on external embedding APIs, this project implements a completely local RAG pipeline, ensuring that sensitive legal data remains within the user's infrastructure.
-
-\subsection{Hierarchical Chunking Strategy}
-Legal documents exhibit a hierarchical structure (Section → Clause → Sub-clause). Standard fixed-size window chunking disrupts this structure and lowers retrieval accuracy.
-
-We implemented a \textbf{three-level hierarchical chunker}:
-\begin{enumerate}
-    \item \textbf{Level 1 (Clause Extraction):} Uses regex detection (e.g., ``2.1'', ``Section 5(a)'') to identify clause boundaries—the smallest retrieval unit.
-    \item \textbf{Level 2 (Section Aggregation):} Groups clauses under section headers (e.g., ``Termination'') for broader semantic context.
-    \item \textbf{Level 3 (Semantic Window):} A fallback sliding window (512 tokens) used when documents lack proper structure.
+\subsection*{User journey (step-by-step)}
+\begin{enumerate}[leftmargin=*,noitemsep]
+  \item \textbf{Account setup}: user registers, receives an OTP verification email, then logs in to obtain a JWT for API calls.
+  \item \textbf{Capture meeting input}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Upload an audio file to the backend, or
+      \item Start a live streaming session from the Chrome extension; audio chunks are uploaded and transcribed incrementally.
+    \end{itemize}
+  \item \textbf{Processing}: backend calls the utility server for Whisper transcription (when audio is present) and then calls the LLM to produce structured JSON (summary, actors, responsibilities, deadlines, key decisions, plus contract elements detection).
+  \item \textbf{Follow-up automation}: deadlines are stored and can be transformed into internal calendar events and email reminders; optional Google Calendar event creation is supported.
+  \item \textbf{Contract drafting}: the backend queries Weaviate via the utility server to retrieve top-matching clause chunks and injects them into the contract generation prompt.
+  \item \textbf{Export}: meeting data can be exported to Google Sheets and contracts can be exported to Google Docs.
 \end{enumerate}
 
-\begin{lstlisting}[language=Python, caption=Hierarchical Chunking Logic]
-# utilities/chunker.py
-def create_hierarchical_chunks(parsed_structure, doc_id):
-    chunks = []
-    for section in parsed_structure:
-        # 1. Section Level chunk
-        chunks.append({
-            "text": section["text"],
-            "chunk_level": 2,
-            "section": section["title"]
-        })
-        # 2. Clause Level chunks
-        for clause in section["clauses"]:
-            chunks.append({
-                "text": clause["text"],
-                "chunk_level": 1,
-                "clause_number": clause["number"]
-            })
-    return chunks
-\end{lstlisting}
+\subsection*{Market-fit justification}
+Generic transcription tools do not enforce downstream structure (deadlines, responsibilities) nor provide a clause-grounded contract drafting path. This system couples transcription + structured extraction + contract drafting with a local clause store to reduce repetitive drafting and improve consistency.
 
-\subsection{Vector Storage \& Retrieval}
-\begin{itemize}
-    \item \textbf{Database:} \textbf{Weaviate}, deployed via Docker.
-    \item \textbf{Schema:} A \texttt{ContractChunk} class enriched with metadata fields such as \texttt{contract\_type} and \texttt{region}.
-    \item \textbf{Search:} Supports hybrid search combining metadata filtering and vector similarity matching.
+\subsection*{Success metrics}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Implemented (measured in code)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item \textbf{Throughput of processed meetings/contracts}: persisted as MongoDB records with status fields (e.g., \texttt{UPLOADED/PROCESSING/COMPLETED/FAILED}) and revision history for contracts.
+      \item \textbf{Quota adherence}: per-user monthly counters for uploads, audio minutes, and contracts enforced by a tiered limit service.
+      \item \textbf{Operational success/failure}: reminder sending sets \texttt{SENT/FAILED}; global error middleware returns structured errors.
+    \end{itemize}
+  \item \textbf{Planned / Proposed (not implemented in code)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item \textbf{Extraction quality}: evaluate summary/action-item/deadline accuracy against annotated ground truth (see Evaluation Plan).
+      \item \textbf{RAG quality}: retrieval recall@k for clause retrieval over labeled contract datasets (see Evaluation Plan).
+      \item \textbf{Latency/cost}: log per-request timing, LLM token usage, and STT duration (see Evaluation Plan).
+    \end{itemize}
 \end{itemize}
 
-\section{Continuous Learning Pipeline}
+\section{System Architecture (MUST match code)}
+\subsection*{High-level overview}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Frontend}: React + Vite development server (port 5173).
+  \item \textbf{Chrome Extension}: captures tab audio (\texttt{tabCapture}) and streams chunks to the backend; receives live transcription via Socket.IO.
+  \item \textbf{Backend}: Node.js/Express REST API with JWT auth, MongoDB persistence (Mongoose), cron jobs, Socket.IO, Google APIs, Stripe billing, and email notifications.
+  \item \textbf{Utility server}: Python/Flask service (port 5001) providing Whisper STT and Weaviate RAG endpoints, plus a batch ingestion endpoint used by the weekly RAG training job.
+  \item \textbf{Vector store}: Weaviate (port 8081, gRPC 50052) configured with \texttt{DEFAULT\_VECTORIZER\_MODULE=none} (bring-your-own vectors).
+\end{itemize}
 
-A continuous learning mechanism ensures that the system evolves as new legal documents become available.
+\subsection*{Architecture diagram (from repository asset)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{systemarchitecture.png}
+\caption{System architecture overview (client, extension, backend, utility server, and external integrations).}
+\end{figure}
 
-\begin{enumerate}
-    \item \textbf{Data Collection:} A backend cron job (\texttt{rag.cron.js}) runs every Sunday at midnight.
-    \item \textbf{Filtering:} Retrieves contracts from MongoDB belonging to users who opted into \texttt{data\_usage\_sharing}.
-    \item \textbf{Processing:} Contracts are submitted to the \texttt{/process\_contracts} endpoint on the utility server.
-    \item \textbf{Ingestion:} Documents are cleaned, chunked, embedded, and upserted into Weaviate.
+\subsection*{Agent framework actually used}
+No agent framework (e.g., LangChain/LlamaIndex/DSPy) is present in the code. ``Agents'' are implemented as explicit prompt templates in a single \texttt{LLMService} that calls OpenRouter\footnote{\url{https://openrouter.ai/}} directly via its chat completions endpoint. Retrieval is a separate call to the utility server, and retrieved context is injected into prompts in the backend controller layer.
+
+\subsection*{Model integrations}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{STT}: OpenAI Whisper\footnote{\url{https://github.com/openai/whisper}} via \texttt{openai-whisper} in the Flask utility server.
+  \item \textbf{LLM}: OpenRouter chat completions (model configured by \texttt{OPENROUTER\_MODEL}; default in code is a DeepSeek-derived free endpoint).
+  \item \textbf{Embeddings}: SentenceTransformers\footnote{\url{https://www.sbert.net/}} \texttt{all-MiniLM-L6-v2} for clause embeddings.
+\end{itemize}
+
+\subsection*{External APIs/tools (found in code)}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Google Workspace}: OAuth via Passport + Google APIs\footnote{\url{https://developers.google.com/apis-explorer}} for Docs/Sheets/Calendar.
+  \item \textbf{Stripe}: subscription billing and webhooks\footnote{\url{https://stripe.com/docs}}.
+  \item \textbf{Brevo (Sendinblue)}: transactional email for OTP, reminders, and notifications\footnote{\url{https://developers.brevo.com/}}.
+  \item \textbf{Socket.IO}: live transcription delivery\footnote{\url{https://socket.io/}}.
+\end{itemize}
+
+\subsection{Data Flow Narrative: request lifecycle}
+\begin{enumerate}[leftmargin=*,noitemsep]
+  \item \textbf{Auth}: client obtains JWT via \texttt{/api/auth/login} (or OAuth callback) and sends it in \texttt{Authorization: Bearer <token>}.
+  \item \textbf{Meeting upload path}:
+    \begin{enumerate}[leftmargin=*,noitemsep]
+      \item \texttt{POST /api/meetings/upload}: backend stores metadata + uploaded audio path (or raw transcript).
+      \item \texttt{POST /api/meetings/\{id\}/process}: if audio exists and transcript empty, backend calls utility \texttt{POST /transcribe}; then calls \texttt{LLMService.analyzeTranscript()} to produce structured JSON, persists results, and creates internal calendar events for deadlines.
+      \item Optional: export to Sheets (\texttt{POST /api/meetings/\{id\}/export-sheets}) and create Google Calendar events (\texttt{POST /api/meetings/\{id\}/create-events}).
+    \end{enumerate}
+  \item \textbf{Live streaming path}:
+    \begin{enumerate}[leftmargin=*,noitemsep]
+      \item \texttt{POST /api/realtime/stream/start}: server creates a session and stream log; allocates an in-memory chunk accumulator.
+      \item \texttt{POST /api/realtime/stream/chunk}: server batches chunks and calls the utility STT endpoint; partial transcripts are pushed to the user's Socket.IO room.
+      \item \texttt{POST /api/realtime/stream/end}: server flushes remaining audio, creates a meeting record, and triggers asynchronous LLM analysis; results later appear in the meeting list.
+    \end{enumerate}
+  \item \textbf{Contract generation path (RAG-enhanced)}:
+    \begin{enumerate}[leftmargin=*,noitemsep]
+      \item Backend queries the utility server \texttt{POST /query} with a contract-type- and context-derived query.
+      \item Utility server encodes the query using SentenceTransformers and calls Weaviate \texttt{near\_vector} retrieval on the \texttt{ContractChunk} collection.
+      \item Backend injects the retrieved snippets into an LLM prompt and creates a contract record in MongoDB with revision history.
+    \end{enumerate}
 \end{enumerate}
 
-\section{Deployment \& Infrastructure}
-
-The entire platform is containerized for consistency and ease of deployment.
-
-\subsection{Docker Orchestration}
-A \texttt{docker-compose.yml} file defines the multi-container stack:
-\begin{itemize}
-    \item \textbf{Frontend:} Serves the UI on port 5173.
-    \item \textbf{Backend:} Runs on port 5000 and communicates with MongoDB and Weaviate.
-    \item \textbf{Utility Engine:} Runs on port 5001 with GPU access through the \texttt{nvidia} runtime.
+\subsection{Agent Design}
+\textbf{Meeting analysis ``agent''} (backend \texttt{LLMService.analyzeTranscript}):
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Responsibility}: convert raw transcript into structured JSON containing summary, actors, roles, responsibilities, deadlines, decisions, and a boolean contract-worthiness signal.
+  \item \textbf{Tools it calls}: OpenRouter chat completions.
+  \item \textbf{Prompt intent}: enforce a fixed JSON schema and derive explicit deadlines only when stated; emit contract elements (offer/service/payment/schedule) for downstream contract drafting.
+\end{itemize}
+\textbf{Contract drafting ``agent''} (backend \texttt{LLMService.generateContract*}):
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Responsibility}: draft contract text/markdown given meeting-derived facts plus (optional) retrieved clause context.
+  \item \textbf{Tools it calls}: OpenRouter chat completions; utility-server retrieval is invoked by the controller before the LLM call.
+  \item \textbf{Prompt intent}: render a complete agreement skeleton (parties, terms, termination, signatures) and incorporate retrieved clauses as references.
 \end{itemize}
 
-\begin{lstlisting}[language=yaml]
-deploy:
-  resources:
-    reservations:
-      devices:
-        - driver: nvidia
-          count: 1
-          capabilities: [gpu]
+\subsection{RAG Design (implemented)}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Chunking strategy}: hierarchical chunking with a token-based fallback (uses \texttt{tiktoken} \texttt{cl100k\_base}).
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Level 1: clause-level chunks merged to stay under \(\approx 350\) tokens.
+      \item Level 2: section-level chunks up to \(\approx 1200\) tokens; larger sections are windowed with overlap.
+      \item Level 3: fallback sliding window of 512 tokens with 128 overlap if parsing yields weak structure.
+    \end{itemize}
+  \item \textbf{Embeddings}: SentenceTransformers \texttt{all-MiniLM-L6-v2}; vectors are supplied explicitly to Weaviate (no server-side vectorizer).
+  \item \textbf{Retrieval logic}: \texttt{near\_vector} query on \texttt{ContractChunk} returning \texttt{text, section, clause\_number, document\_id, contract\_type}; backend typically requests top-3 results for prompt injection.
+  \item \textbf{Continuous learning}: weekly cron (backend) batches consenting users' recent contracts and sends them to \texttt{POST /process\_contracts} for parsing, embedding, and insertion into Weaviate.
+\end{itemize}
+
+\subsection{Safety \& Reliability}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Authentication \& permissions (implemented)}: JWT middleware gates API access; most DB queries are scoped by \texttt{user\_id}. Feature access is tier-gated (e.g., streaming requires paid tiers).
+  \item \textbf{Operational robustness (implemented)}: centralized error middleware formats Mongoose/JWT upload errors; cron jobs catch and log failures without crashing the process; email send failures do not crash the app.
+  \item \textbf{Prompt injection handling (Planned / Proposed)}: no explicit prompt-injection sanitization is implemented. A realistic extension would add: (i) system prompts with non-overridable policies, (ii) input stripping of embedded instructions in retrieved clauses, and (iii) JSON schema validation with retry-on-failure.
+  \item \textbf{Boundary gaps (incomplete)}: some service-to-service URLs are hard-coded to \texttt{http://localhost:5001} in backend code; in Docker Compose, this should be \texttt{http://utilities:5001} for inter-container networking.
+\end{itemize}
+
+\section{Engineering Requirements (verify via code)}
+\subsection*{REST API (implemented: Express, not FastAPI)}
+The backend uses Express\footnote{\url{https://expressjs.com/}} and exposes authenticated routes under \texttt{/api/*}, plus \texttt{/health} and \texttt{/api-docs} (Swagger UI).
+
+\subsection*{Dockerization (implemented)}
+Dockerfiles exist for \texttt{backend/}, \texttt{frontend/}, and \texttt{utilities/}. A root \texttt{docker-compose.yml} defines services for frontend, backend, utilities, MongoDB, and Weaviate.
+
+\subsection*{Automated testing}
+\textbf{Implemented}: unit tests exist for backend (Jest), frontend (Vitest + Testing Library), and Python utilities (pytest). Coverage thresholds are enforced by each test runner configuration, and a CI workflow runs tests automatically on pushes and pull requests (GitHub Actions).
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Backend}: Jest tests in \path{backend/tests/} (run: \path{cd backend && npm test -- --coverage}).
+  \item \textbf{Frontend}: Vitest tests in \path{frontend/src/**/**.test.tsx} (run: \path{cd frontend && npm run test:run -- --coverage}).
+  \item \textbf{Utilities}: pytest tests in \path{utilities/tests/} (run: \path{cd utilities && python -m pytest --cov}).
+  \item \textbf{CI}: GitHub Actions workflow in \path{.github/workflows/ci.yml}.
+  \item \textbf{Coverage gates (current)}: backend lines/statements \(\ge 80\%\) (see \path{backend/jest.config.cjs}); frontend lines/statements/branches \(\ge 80\%\) (see \path{frontend/vite.config.ts}); utilities total coverage \(\ge 90\%\) (see \path{utilities/.coveragerc}).
+\end{itemize}
+
+\noindent\textbf{CI workflow excerpt (actual file in repo):}
+\lstset{style=proj}
+\begin{lstlisting}
+# .github/workflows/ci.yml (excerpt)
+jobs:
+  backend:
+    steps:
+      - run: npm ci
+      - run: npm test -- --coverage
+  frontend:
+    steps:
+      - run: npm ci
+      - run: npm run test:run -- --coverage
+  utilities:
+    steps:
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest --cov --cov-report=term-missing
 \end{lstlisting}
 
-\section{Conclusion}
-This project demonstrates a full-stack AI application addressing real-world legal automation challenges. By combining microservices engineering with advanced NLP techniques (hierarchical chunking, RAG, Whisper transcription), the platform is capable of generating contextually and legally accurate contracts. The system is built for continuous improvement, growing more intelligent and precise with each user interaction.
+\subsection*{Logging \& monitoring}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Logging (implemented)}: uses \texttt{console.log}/\texttt{console.error} across backend and utility services.
+  \item \textbf{Metrics/Tracing (Planned / Proposed)}: no metrics library (e.g., Prometheus/OpenTelemetry) is present. A realistic addition is request/cron timing instrumentation and structured logs with correlation IDs.
+\end{itemize}
+
+\subsection*{Exception handling \& recovery}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Backend}: centralized error middleware maps Mongoose/JWT/multer errors; controllers use an \texttt{asyncHandler} wrapper.
+  \item \textbf{Utility server}: STT errors are returned as HTTP 200 in some cases to avoid cascading failures; Weaviate query errors return empty results.
+  \item \textbf{Cron jobs}: both reminder and weekly RAG training jobs catch exceptions and log errors.
+\end{itemize}
+
+\subsection*{Configuration management}
+Configuration is environment-variable driven via \texttt{dotenv} on the backend and utility server. Required variables inferred from code include: \texttt{MONGODB\_URI}, \texttt{JWT\_SECRET}, \texttt{OPENROUTER\_API\_KEY}, \texttt{CLIENT\_URL}, \texttt{SESSION\_SECRET}, \texttt{GOOGLE\_CLIENT\_ID}, \texttt{GOOGLE\_CLIENT\_SECRET}, \texttt{GOOGLE\_CALLBACK\_URL}, \texttt{BREVO\_API\_KEY}, \texttt{STRIPE\_SECRET\_KEY}, \texttt{STRIPE\_WEBHOOK\_SECRET}, and Stripe plan identifiers (\texttt{STRIPE\_PRICE\_*} or \texttt{STRIPE\_PRODUCT\_*}). Note: \textbf{docker-compose sets \texttt{MONGO\_URI} but backend code reads \texttt{MONGODB\_URI}}; this is an integration gap that must be corrected for Compose-based runs.
+
+\subsection*{Git workflow assumptions (Planned / Proposed)}
+\textbf{Implemented}: GitHub Actions CI runs automated tests on every push and pull request. A practical workflow is feature branches + pull requests, with CI as a required check before merging.
+
+\subsection*{Mandatory Table: Course Compliance Matrix}
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}p{0.23\linewidth} >{\RaggedRight\arraybackslash}p{0.12\linewidth} >{\RaggedRight\arraybackslash}X >{\RaggedRight\arraybackslash}p{0.23\linewidth}@{}}
+\toprule
+\textbf{Course Requirement} & \textbf{Present in Code?} & \textbf{Where Implemented} & \textbf{Notes} \\
+\midrule
+REST API & Yes & \codepath{backend/src/app.js}, \codepath{backend/src/routes/} & Express-based (not FastAPI). \\
+AuthN/AuthZ & Yes & \codepath{backend/src/middleware/auth.middleware.js} & JWT required for most routes; user-scoped DB queries. \\
+RAG pipeline & Yes & \codepath{utilities/app.py}, \codepath{utilities/chunker.py}, \codepath{utilities/weaviate_manager.py} & Retrieval via Weaviate; context injected by backend controllers. \\
+Vector store & Yes & \codepath{docker-compose.yml} (Weaviate), \codepath{utilities/app.py} & BYO vectors; schema initialization exists in \codepath{utilities/weaviate_manager.py}. \\
+LLM integration & Yes & \codepath{backend/src/services/llm.service.js} & OpenRouter chat completions. \\
+STT integration & Yes & \codepath{utilities/app.py}, \codepath{backend/src/services/audio.service.js} & Whisper model; backend posts to \codepath{/transcribe}. \\
+Dockerization & Yes & \codepath{docker-compose.yml}, Dockerfiles & Multi-service stack; env var mismatch noted. \\
+Automated tests & Yes & \codepath{backend/tests/}, \codepath{frontend/src/**/*.test.tsx}, \codepath{utilities/tests/} & Coverage thresholds enforced; CI runs via GitHub Actions. \\
+Logging & Yes (basic) & \codepath{console.*} across services & No structured logging/metrics. \\
+Background jobs & Yes & \codepath{backend/src/jobs/reminder.cron.js}, \codepath{backend/src/cron/rag.cron.js} & Reminder (minute); RAG training (weekly). \\
+\bottomrule
+\end{tabularx}
+\end{adjustbox}
+\end{center}
+
+\section{Deployment}
+\subsection*{Local (non-Docker) run (based on repository)}
+\begin{enumerate}[leftmargin=*,noitemsep]
+  \item Start Weaviate and MongoDB (recommended via Compose): \texttt{docker-compose up -d mongo weaviate}.
+  \item Start utility server: \texttt{cd utilities \&\& pip install -r requirements.txt \&\& python app.py} (listens on 5001).
+  \item Start backend: \texttt{cd backend \&\& npm install \&\& npm run dev} (listens on 5000). Ensure \texttt{MONGODB\_URI} and \texttt{JWT\_SECRET} are set.
+  \item Start frontend: \texttt{cd frontend \&\& npm install \&\& npm run dev -- --host} (listens on 5173).
+\end{enumerate}
+
+\subsection*{Docker Compose services and ports (implemented)}
+Frontend: 5173, Backend: 5000, Utility: 5001, MongoDB: 27017, Weaviate: 8081 (HTTP) and 50052 (gRPC).
+
+\subsection*{Required environment variables}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Backend}: \texttt{MONGODB\_URI}, \texttt{JWT\_SECRET}, \texttt{OPENROUTER\_API\_KEY}, \texttt{CLIENT\_URL}, \texttt{SESSION\_SECRET} (OAuth session), Stripe keys (\texttt{STRIPE\_SECRET\_KEY}, \texttt{STRIPE\_WEBHOOK\_SECRET}, plan IDs), Google OAuth keys, and \texttt{BREVO\_API\_KEY}.
+  \item \textbf{Utility}: optional \texttt{FLASK\_ENV}; Weaviate is assumed at \texttt{localhost:8081} in code.
+\end{itemize}
+
+\subsection*{Optional cloud deployment (Planned / Proposed)}
+Run the same services on a VM or container platform (e.g., Docker on a single host). For production-grade deployment, replace hard-coded inter-service URLs with service discovery (Compose DNS names), persist MongoDB/Weaviate volumes, and add secrets management.
+
+\section{Evaluation Plan}
+\subsection*{Evaluation present in code}
+No automated evaluation scripts or metrics dashboards are implemented. The repository includes datasets under \texttt{RAG\_DATA/} (e.g., CUAD) which can support evaluation, but no evaluation harness is wired into CI or runtime.
+
+\subsection*{Proposed realistic evaluation (grounded in repo assets)}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Offline (RAG retrieval)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Use CUAD (\texttt{RAG\_DATA/CUAD\_v1}) as a clause-query dataset. Convert labeled questions into queries; treat ground-truth clause spans as relevant documents.
+      \item Measure Recall@k and nDCG@k over Weaviate retrieval (\(k \in \{1,3,5\}\)), using the existing chunking and embedding pipeline.
+    \end{itemize}
+  \item \textbf{Offline (meeting extraction)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Collect a small set of annotated transcripts (e.g., 30 meetings) with gold action items and deadlines.
+      \item Score: (i) action-item F1 with fuzzy matching, (ii) deadline extraction precision/recall, (iii) JSON validity rate (already partially enforced by parsing).
+    \end{itemize}
+  \item \textbf{Online metrics (Planned / Proposed)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Track completion rate of \texttt{PROCESSING} \(\rightarrow\) \texttt{COMPLETED}, error rates by endpoint, and user edits per contract revision (already stored as revision history).
+    \end{itemize}
+  \item \textbf{Latency \& cost estimation (Planned / Proposed)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Measure p50/p95 end-to-end latency per endpoint; record STT duration minutes, and approximate LLM cost by logging token counts from OpenRouter responses (not implemented).
+    \end{itemize}
+  \item \textbf{Load testing plan (Planned / Proposed)}:
+    \begin{itemize}[leftmargin=*,noitemsep]
+      \item Use k6\footnote{\url{https://k6.io/}} or Locust\footnote{\url{https://locust.io/}} to test \texttt{/api/meetings/upload}, \texttt{/api/meetings/\{id\}/process}, and streaming chunk ingestion.
+      \item Validate backpressure behavior on streaming endpoints and utility server concurrency (Whisper model is guarded by a lock in Flask).
+    \end{itemize}
+\end{itemize}
+
+\section{Limitations and Future Work}
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \textbf{Inter-container addressing gaps}: backend RAG/STT calls are hard-coded to \texttt{localhost:5001}; in Docker Compose, they should target the \texttt{utilities} service hostname.
+  \item \textbf{Compose env mismatch}: backend uses \texttt{MONGODB\_URI} but Compose sets \texttt{MONGO\_URI}; this prevents out-of-the-box Compose runs without manual fixes.
+  \item \textbf{No prompt-injection defenses}: retrieved clause text is injected directly into prompts; add retrieval sanitization and policy-first prompting.
+  \item \textbf{Test coverage gaps}: while unit tests and CI are implemented, some external-integration heavy modules (e.g., Stripe/Google/LLM end-to-end flows) are only partially unit-tested and would benefit from integration tests with mocks/containers.
+  \item \textbf{Embedding device assumption}: \texttt{utilities/embedder.py} forces CUDA; production should select CPU/GPU dynamically similar to \texttt{utilities/app.py}.
+  \item \textbf{Schema lifecycle}: Weaviate schema initialization is implemented in \texttt{utilities/weaviate\_manager.py} and invoked by \texttt{utilities/process\_data.py}, but not automatically invoked by the running Flask server; production should ensure schema exists at startup.
+  \item \textbf{Observability}: replace console logging with structured logs and add metrics for cron jobs, queue depth, and request latency.
+\end{itemize}
+
+\section*{Appendix: Required Listings (derived from code)}
+\subsection*{(A) Real REST endpoints (Express) and mapping to code}
+\lstset{style=proj}
+\begin{lstlisting}[language=JavaScript]
+// How endpoints are composed in this repo:
+// 1) backend/src/app.js mounts a router at a base path
+// 2) backend/src/routes/*.routes.js defines the subpaths and controller handlers
+
+// backend/src/app.js (excerpt)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+app.use('/api/auth', authRoutes);
+app.use('/api/meetings', meetingRoutes);
+
+// backend/src/routes/auth.routes.js (excerpt)
+router.post('/login', authController.login);            // POST /api/auth/login
+
+// backend/src/routes/meeting.routes.js (excerpt)
+router.post('/upload', upload.single('audio'), meetingController.uploadTranscript);
+// POST /api/meetings/upload
+\end{lstlisting}
+
+\vspace{0.5em}
+\noindent\textbf{Endpoint-to-code map (selected core endpoints):}
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}p{0.32\linewidth} >{\RaggedRight\arraybackslash}p{0.12\linewidth} >{\RaggedRight\arraybackslash}X >{\RaggedRight\arraybackslash}p{0.26\linewidth}@{}}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Route file (where registered)} & \textbf{Controller handler} \\
+\midrule
+\codepath{/health} & GET & \codepath{backend/src/app.js} & inline handler \\
+\codepath{/api/auth/register} & POST & \codepath{backend/src/routes/auth.routes.js} & \codepath{authController.register} \\
+\codepath{/api/auth/login} & POST & \codepath{backend/src/routes/auth.routes.js} & \codepath{authController.login} \\
+\codepath{/api/auth/verify-email} & POST & \codepath{backend/src/routes/auth.routes.js} & \codepath{authController.verifyEmail} \\
+\codepath{/api/auth/me} & GET & \codepath{backend/src/routes/auth.routes.js} & \codepath{authController.getCurrentUser} \\
+\codepath{/api/meetings/upload} & POST & \codepath{backend/src/routes/meeting.routes.js} & \codepath{meetingController.uploadTranscript} \\
+\codepath{/api/meetings/:id/process} & POST & \codepath{backend/src/routes/meeting.routes.js} & \codepath{meetingController.processTranscript} \\
+\codepath{/api/contracts/draft} & POST & \codepath{backend/src/routes/contract.routes.js} & \codepath{contractController.draftContract} \\
+\codepath{/api/reminders/create} & POST & \codepath{backend/src/routes/reminder.routes.js} & \codepath{reminderController.createReminder} \\
+\codepath{/api/realtime/stream/start} & POST & \codepath{backend/src/routes/stream.routes.js} & \codepath{streamController.startSession} \\
+\bottomrule
+\end{tabularx}
+\end{adjustbox}
+\end{center}
+
+\subsection*{(B) Agent orchestration pseudocode (derived from backend flow)}
+\begin{lstlisting}[language=JavaScript]
+// Pseudocode derived from meeting.controller.js and llm.service.js
+if (meeting.hasAudio && meeting.rawTranscript is empty) {
+  transcript = POST utility_server("/transcribe", audioFile)
+}
+analysisJson = POST openrouter("/chat/completions", prompt(transcript))
+persist(meeting.summary, meeting.deadlines, meeting.responsibilities, ...)
+if (userRequestsContract) {
+  ragHits = POST utility_server("/query", queryFrom(meetingSummary, contractType))
+  contractDraft = POST openrouter("/chat/completions", prompt(meetingData, ragHits))
+  persist(contractDraft, revisionHistory)
+}
+\end{lstlisting}
+
+\subsection*{(C) docker-compose snippet (actual services)}
+\begin{lstlisting}
+services:
+  backend:
+    ports: ["5000:5000"]
+  utilities:
+    ports: ["5001:5001"]
+  weaviate:
+    ports: ["8081:8081", "50052:50052"]
+\end{lstlisting}
 
 \end{document}
+
+

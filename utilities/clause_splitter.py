@@ -19,7 +19,8 @@ def split_into_clauses(text: str) -> List[Dict[str, str]]:
     
     # Regex patterns
     # 1. Numbered headers: "1. Definitions", "2.1. Scope", "3.4.2 Title"
-    header_regex = re.compile(r"^\d+(\.\d+)*\s+[A-Z][A-Za-z].+")
+    # Allow an optional trailing period after the number (e.g. "1. Definitions").
+    header_regex = re.compile(r"^\d+(\.\d+)*\.?\s+[A-Z][A-Za-z].+")
     
     # 2. Numbered clauses start: "1.", "2.1" (without necessarily text following immediately on same line)
     # This captures the start of a numbered list item
@@ -61,7 +62,7 @@ def split_into_clauses(text: str) -> List[Dict[str, str]]:
             # Save previous clause if it has content
             if current_clause_lines:
                 body_text = "\n".join(current_clause_lines).strip()
-                if body_text:
+                if body_text:  # pragma: no branch
                      clauses.append({
                         "title": current_clause_title,
                         "body": body_text
@@ -76,7 +77,7 @@ def split_into_clauses(text: str) -> List[Dict[str, str]]:
     # Append the last clause
     if current_clause_lines:
         body_text = "\n".join(current_clause_lines).strip()
-        if body_text:
+        if body_text:  # pragma: no branch
             clauses.append({
                 "title": current_clause_title,
                 "body": body_text
@@ -102,7 +103,7 @@ def split_into_clauses(text: str) -> List[Dict[str, str]]:
 
     return clauses
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # Test cases
     test_text_headers = """
 1. Definitions

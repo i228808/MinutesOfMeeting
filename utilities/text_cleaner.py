@@ -46,7 +46,7 @@ def clean_contract_text(text: str) -> str:
     # Trim leading/trailing whitespace
     return text.strip()
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # Test cases
     raw_sample = """
     This is a sample text with ligatures: ﬁrst, ﬂower.

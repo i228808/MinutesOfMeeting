@@ -46,7 +46,7 @@ def load_pdfs_from_folder(root_folder: str) -> List[Dict[str, str]]:
 
     return pdf_docs
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)
     rag_data_path = os.path.join(project_root, "RAG_DATA")

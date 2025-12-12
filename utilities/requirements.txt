@@ -8,3 +8,5 @@ numpy
 torch
 python-dotenv
 requests
+pytest
+pytest-cov

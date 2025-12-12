@@ -38,10 +38,14 @@ const startServer = async () => {
     }
 };
 
-startServer();
+if (require.main === module) {
+    startServer();
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err.message);
     server.close(() => process.exit(1));
 });
+
+module.exports = { server, startServer };

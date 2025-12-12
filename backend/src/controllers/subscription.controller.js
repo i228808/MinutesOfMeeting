@@ -94,6 +94,7 @@ const createSubscription = asyncHandler(async (req, res) => {
     }
 
     // Create checkout session
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: 'subscription',
@@ -102,8 +103,8 @@ const createSubscription = asyncHandler(async (req, res) => {
             price: priceId,
             quantity: 1
         }],
-        success_url: `${process.env.CLIENT_URL}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/dashboard/subscription?canceled=true`,
+        success_url: `${clientUrl}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${clientUrl}/dashboard/subscription?canceled=true`,
         metadata: {
             user_id: req.user._id.toString(),
             tier
@@ -132,51 +133,52 @@ const changeTier = asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'No subscription found' });
     }
 
-    // If switching to FREE, cancel current subscription
+    // If switching to FREE, cancel current subscription immediately or at period end
     if (tier === 'FREE') {
-        return cancelSubscription(req, res);
+        if (subscription.stripe_subscription_id) {
+            // Cancel Stripe subscription immediately (or period end depending on preference)
+            // Here we cancel at period end so they keep what they paid for until it expires
+             await stripe.subscriptions.update(subscription.stripe_subscription_id, {
+                cancel_at_period_end: true
+            });
+            
+            subscription.cancel_at_period_end = true;
+            await subscription.save();
+
+            return res.json({
+                success: true,
+                message: 'Subscription will be cancelled at the end of the billing period.',
+                subscription: {
+                    tier: subscription.tier,
+                    status: subscription.status,
+                    cancel_at_period_end: true,
+                    renewal_date: subscription.renewal_date
+                }
+            });
+        } else {
+             // Already free or just database record
+             subscription.tier = 'FREE';
+             subscription.status = 'ACTIVE';
+             await subscription.save();
+             
+             req.user.subscription_tier = 'FREE';
+             await req.user.save();
+             
+             return res.json({ success: true, subscription });
+        }
     }
 
-    // If upgrading/changing paid tier
+    // Always create a new Checkout Session for any paid tier change (Upgrade OR Downgrade)
+    // To ensure we "go to Stripe", we use the Billing Portal for existing subscriptions.
     if (subscription.stripe_subscription_id) {
-        // Has existing subscription -> Update it
-        const priceId = await getPriceId(tier);
-
-        const stripeSubscription = await stripe.subscriptions.retrieve(
-            subscription.stripe_subscription_id
-        );
-
-        await stripe.subscriptions.update(subscription.stripe_subscription_id, {
-            items: [{
-                id: stripeSubscription.items.data[0].id,
-                price: priceId
-            }],
-            proration_behavior: 'create_prorations'
-        });
-
-        // Update local records immediately (webhook will also confirm)
-        subscription.tier = tier;
-        await subscription.save();
-
-        req.user.subscription_tier = tier;
-        await req.user.save();
-
-        try {
-            await notificationService.sendSubscriptionEmail(req.user, tier, 'changed');
-        } catch (error) {
-            console.error('Failed to send subscription email:', error);
-        }
-
-        return res.json({
-            success: true,
-            subscription: {
-                tier: subscription.tier,
-                status: subscription.status,
-                limits: subscription.limits
-            }
-        });
+         const portalSession = await stripe.billingPortal.sessions.create({
+            customer: subscription.stripe_customer_id,
+            return_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/subscription`,
+         });
+         
+         return res.json({ checkout_url: portalSession.url });
     } else {
-        // No existing subscription -> Create new one (Checkout)
+        // No active Stripe subscription, standard checkout
         return createSubscription(req, res);
     }
 });
@@ -276,6 +278,10 @@ const handleStripeWebhook = async (req, res) => {
     let event;
 
     try {
+        if (!process.env.STRIPE_WEBHOOK_SECRET) {
+             console.error('Missing STRIPE_WEBHOOK_SECRET');
+             return res.status(500).send('Webhook Secret Missing');
+        }
         event = stripe.webhooks.constructEvent(
             req.body,
             sig,
@@ -286,34 +292,43 @@ const handleStripeWebhook = async (req, res) => {
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    console.log(`Received Stripe webhook event: ${event.type}`);
+
     // Handle the event
-    switch (event.type) {
-        case 'checkout.session.completed': {
-            const session = event.data.object;
-            await handleCheckoutCompleted(session);
-            break;
-        }
+    try {
+        switch (event.type) {
+            case 'checkout.session.completed': {
+                const session = event.data.object;
+                await handleCheckoutCompleted(session);
+                break;
+            }
 
-        case 'customer.subscription.updated': {
-            const subscription = event.data.object;
-            await handleSubscriptionUpdated(subscription);
-            break;
-        }
+            case 'customer.subscription.updated': {
+                const subscription = event.data.object;
+                await handleSubscriptionUpdated(subscription);
+                break;
+            }
 
-        case 'customer.subscription.deleted': {
-            const subscription = event.data.object;
-            await handleSubscriptionDeleted(subscription);
-            break;
-        }
+            case 'customer.subscription.deleted': {
+                const subscription = event.data.object;
+                await handleSubscriptionDeleted(subscription);
+                break;
+            }
 
-        case 'invoice.payment_failed': {
-            const invoice = event.data.object;
-            await handlePaymentFailed(invoice);
-            break;
-        }
+            case 'invoice.payment_failed': {
+                const invoice = event.data.object;
+                await handlePaymentFailed(invoice);
+                break;
+            }
 
-        default:
-            console.log(`Unhandled event type: ${event.type}`);
+            default:
+                console.log(`Unhandled event type: ${event.type}`);
+        }
+    } catch (error) {
+        console.error(`Error processing webhook event ${event.type}:`, error);
+        // Return 200 to Stripe to prevent retries if it's an application error
+        // or return 500 if you want Stripe to retry
+        return res.status(500).json({ error: 'Processing failed' });
     }
 
     res.json({ received: true });

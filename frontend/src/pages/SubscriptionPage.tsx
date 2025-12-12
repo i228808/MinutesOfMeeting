@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
     CreditCard,
     Check,
@@ -194,8 +195,12 @@ export default function SubscriptionPage() {
             const data = await res.json();
 
             if (res.ok) {
+                if (data.message && !data.checkout_url) {
+                    toast(data.message);
+                }
+                
                 if (data.checkout_url) {
-                    window.open(data.checkout_url, '_blank');
+                    window.location.href = data.checkout_url;
                 } else {
                     fetchData();
                 }
@@ -260,7 +265,14 @@ export default function SubscriptionPage() {
             {subscription && (
                 <div className="dashboard-card" style={{ padding: '24px', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'white', margin: 0 }}>Current Usage</h3>
+                        <div>
+                            <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'white', margin: 0 }}>Current Usage</h3>
+                            {subscription.cancel_at_period_end && (
+                                <p style={{ fontSize: '13px', color: '#f87171', margin: '4px 0 0' }}>
+                                    Your plan will be canceled on {new Date(subscription.current_period_end || '').toLocaleDateString()}
+                                </p>
+                            )}
+                        </div>
                         <span style={{
                             fontSize: '12px',
                             padding: '4px 12px',

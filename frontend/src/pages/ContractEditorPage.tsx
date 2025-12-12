@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
 import { useReactToPrint } from 'react-to-print';
 import {
     ArrowLeft,
