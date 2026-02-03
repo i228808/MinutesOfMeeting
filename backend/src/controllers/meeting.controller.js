@@ -358,25 +358,76 @@ const createCalendarEvents = asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'No deadlines to create events for' });
     }
 
-    const events = await googleService.createDeadlineEvents(
-        req.user,
-        meeting._id,
-        meeting.processed_deadlines
-    );
+    // 1. Try to create Google Calendar events
+    let googleEvents = [];
+    try {
+        if (req.user.google_access_token) {
+            googleEvents = await googleService.createDeadlineEvents(
+                req.user,
+                meeting._id,
+                meeting.processed_deadlines
+            );
+        }
+    } catch (error) {
+        console.error('Google Calendar Sync Failed:', error);
+        // Continue to create local events regardless
+    }
 
-    // Update deadline records with calendar event IDs
-    for (const event of events) {
-        const deadline = meeting.processed_deadlines.find(d => d.task === event.task);
-        if (deadline) {
-            deadline.calendar_event_id = event.eventId;
+    const createdLocalEvents = [];
+
+    // 2. Create Local Calendar Events & Update Meeting
+    for (const deadline of meeting.processed_deadlines) {
+        if (!deadline.deadline || !deadline.task) continue;
+
+        // Find matching Google Event if it was created
+        const googleEvent = googleEvents.find(e => e.task === deadline.task);
+        if (googleEvent) {
+            deadline.calendar_event_id = googleEvent.eventId;
+        }
+
+        const deadlineDate = new Date(deadline.deadline);
+        // Default to 9 AM - 10 AM to match Google Service logic if used, otherwise standard
+        deadlineDate.setHours(9, 0, 0, 0);
+        const endTime = new Date(deadlineDate);
+        endTime.setHours(10, 0, 0, 0);
+
+        // Check if exists locally
+        let event = await CalendarEvent.findOne({
+            user_id: req.user._id,
+            meeting_id: meeting._id,
+            title: deadline.task
+        });
+
+        if (!event) {
+            event = await CalendarEvent.create({
+                user_id: req.user._id,
+                meeting_id: meeting._id,
+                google_event_id: googleEvent ? googleEvent.eventId : undefined,
+                title: deadline.task,
+                description: `Assigned to: ${deadline.actor || 'Unassigned'}\nFrom meeting: ${meeting.title}`,
+                start_time: deadlineDate,
+                end_time: endTime,
+                deadline: new Date(deadline.deadline),
+                all_day: false,
+                type: 'deadline',
+                color: '#f59e0b',
+                status: 'SCHEDULED'
+            });
+            createdLocalEvents.push(event);
+        } else if (googleEvent && !event.google_event_id) {
+            // Link existing local event to Google event if just synced
+            event.google_event_id = googleEvent.eventId;
+            await event.save();
         }
     }
+
     await meeting.save();
 
     res.json({
         success: true,
-        events_created: events.length,
-        events
+        events_created: createdLocalEvents.length,
+        google_sync_count: googleEvents.length,
+        events: createdLocalEvents
     });
 });
 

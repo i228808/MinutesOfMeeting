@@ -345,7 +345,7 @@ export default function SubscriptionPage() {
 
                     {subscription.tier !== 'FREE' && (
                         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                            <button onClick={handleManageBilling} className="btn-secondary" style={{ width: 'auto' }}>
+                            <button onClick={handleManageBilling} className="btn btn-secondary" style={{ width: 'auto' }}>
                                 <CreditCard size={16} style={{ marginRight: '8px' }} /> Manage Billing
                                 <ExternalLink size={14} style={{ marginLeft: '8px', opacity: 0.5 }} />
                             </button>
@@ -421,13 +421,12 @@ export default function SubscriptionPage() {
                             <button
                                 onClick={() => handleChangePlan(plan.id)}
                                 disabled={isCurrent || actionLoading === plan.id}
-                                className={isCurrent ? 'btn-secondary' : 'btn-primary'}
+                                className={`btn ${isCurrent ? 'btn-secondary' : 'btn-primary'}`}
                                 style={{
                                     opacity: isCurrent ? 0.5 : 1,
                                     cursor: isCurrent ? 'default' : 'pointer',
-                                    background: isCurrent ? 'rgba(255,255,255,0.1)' : undefined,
-                                    border: isCurrent ? '1px solid rgba(255,255,255,0.2)' : undefined,
-                                    color: isCurrent ? 'rgba(255,255,255,0.5)' : undefined
+                                    width: '100%',
+                                    marginTop: 'auto'
                                 }}
                             >
                                 {actionLoading === plan.id ? (

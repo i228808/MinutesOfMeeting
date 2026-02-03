@@ -170,13 +170,43 @@ const changeTier = asyncHandler(async (req, res) => {
 
     // Always create a new Checkout Session for any paid tier change (Upgrade OR Downgrade)
     // To ensure we "go to Stripe", we use the Billing Portal for existing subscriptions.
+    // Always create a new Checkout Session for any paid tier change (Upgrade OR Downgrade)
+    // To ensure we "go to Stripe", we use the Billing Portal for existing subscriptions.
     if (subscription.stripe_subscription_id) {
-        const portalSession = await stripe.billingPortal.sessions.create({
-            customer: subscription.stripe_customer_id,
-            return_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/subscription`,
-        });
+        try {
+            // Get current subscription items to find the ID to update
+            const currentSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id);
+            const itemId = currentSub.items.data[0].id;
+            const priceId = await getPriceId(tier);
 
-        return res.json({ checkout_url: portalSession.url });
+            // Update the subscription directly using proration
+            await stripe.subscriptions.update(subscription.stripe_subscription_id, {
+                items: [{
+                    id: itemId,
+                    price: priceId,
+                }],
+                proration_behavior: 'create_prorations',
+            });
+
+            // Update local DB
+            subscription.tier = tier;
+            subscription.status = 'ACTIVE';
+            await subscription.save();
+
+            req.user.subscription_tier = tier;
+            await req.user.save();
+
+            return res.json({
+                success: true,
+                message: `Successfully changed plan to ${tier}`
+            });
+
+        } catch (updateError) {
+            console.error('Stripe update failed:', updateError);
+            // Fallback: Check if it requires payment method update (e.g. price difference requires immediate payment and fails)
+            // In that case, we might need a checkout session or portal, but for now let's return error.
+            return res.status(400).json({ error: 'Failed to update subscription. Please check your payment method.' });
+        }
     } else {
         // No active Stripe subscription, standard checkout
         return createSubscription(req, res);

@@ -6,7 +6,6 @@ import {
     Calendar,
     Sheet,
     FileSignature,
-    Clock,
     Users,
     ListChecks,
     MessageSquare,
@@ -264,16 +263,7 @@ export default function MeetingDetailPage() {
     // Restore selectedRegion state (was also deleted)
     const [selectedRegion, setSelectedRegion] = useState('Pakistan');
 
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+
 
     const formatDeadlineDate = (dateStr: string) => {
         if (!dateStr) return 'Not specified';
@@ -334,7 +324,7 @@ export default function MeetingDetailPage() {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {!isEditing ? (
                         <>
-                            <button onClick={() => setIsEditing(true)} className="btn-secondary" style={{ width: 'auto' }}>
+                            <button onClick={() => setIsEditing(true)} className="btn btn-secondary" style={{ width: 'auto' }}>
                                 <FileSignature size={16} style={{ marginRight: '8px' }} />
                                 Edit Meeting
                             </button>
@@ -343,7 +333,7 @@ export default function MeetingDetailPage() {
                                 <>
                                     <button
                                         onClick={handleExportToSheets}
-                                        className="btn-secondary"
+                                        className="btn btn-secondary"
                                         style={{ width: 'auto' }}
                                         disabled={actionLoading === 'sheets'}
                                     >
@@ -354,7 +344,7 @@ export default function MeetingDetailPage() {
                                     </button>
                                     <button
                                         onClick={handleCreateEvents}
-                                        className="btn-secondary"
+                                        className="btn btn-secondary"
                                         style={{ width: 'auto' }}
                                         disabled={actionLoading === 'calendar'}
                                     >
@@ -363,7 +353,7 @@ export default function MeetingDetailPage() {
                                     </button>
                                     <button
                                         onClick={() => setShowContractModal(true)}
-                                        className="btn-primary"
+                                        className="btn btn-primary"
                                         style={{ width: 'auto' }}
                                         disabled={actionLoading === 'contract'}
                                     >
@@ -375,10 +365,10 @@ export default function MeetingDetailPage() {
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setIsEditing(false)} className="btn-secondary" disabled={actionLoading === 'save'}>
+                            <button onClick={() => setIsEditing(false)} className="btn btn-secondary" disabled={actionLoading === 'save'}>
                                 Cancel
                             </button>
-                            <button onClick={handleSave} className="btn-primary" disabled={actionLoading === 'save'}>
+                            <button onClick={handleSave} className="btn btn-primary" disabled={actionLoading === 'save'}>
                                 {actionLoading === 'save' ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                                 <span style={{ marginLeft: '8px' }}>Save & Sync</span>
                             </button>

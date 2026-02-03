@@ -4,9 +4,7 @@ import {
     Plus,
     Trash2,
     Clock,
-    Calendar,
     AlertCircle,
-    CheckCircle,
     X,
     Loader2,
     RefreshCw
@@ -223,11 +221,11 @@ export default function RemindersPage() {
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     {reminder.status === 'PENDING' && (
-                                        <button onClick={() => handleCancel(reminder._id)} style={{ background: 'none', border: 'none', color: 'var(--color-warning)', cursor: 'pointer', padding: '4px' }} title="Cancel">
+                                        <button onClick={() => handleCancel(reminder._id)} className="btn btn-icon btn-ghost" style={{ color: 'var(--color-warning)' }} title="Cancel">
                                             <X size={16} />
                                         </button>
                                     )}
-                                    <button onClick={() => handleDelete(reminder._id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', padding: '4px' }} title="Delete">
+                                    <button onClick={() => handleDelete(reminder._id)} className="btn btn-icon btn-ghost" style={{ color: 'var(--color-error)' }} title="Delete">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>

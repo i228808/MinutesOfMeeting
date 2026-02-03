@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { User, Bell, Shield, Moon, Sun, Monitor, LogOut, Check } from 'lucide-react';
+import { User, Bell, Shield, Moon, Sun, Monitor, LogOut, CreditCard } from 'lucide-react';
+import SubscriptionPage from './SubscriptionPage';
 
 export default function SettingsPage() {
     const { theme, toggleTheme } = useTheme();
@@ -28,6 +29,7 @@ export default function SettingsPage() {
         { id: 'appearance', label: 'Appearance', icon: Monitor },
         { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'privacy', label: 'Privacy & Security', icon: Shield },
+        { id: 'billing', label: 'Plans & Billing', icon: CreditCard },
     ];
 
     return (
@@ -190,7 +192,7 @@ export default function SettingsPage() {
 
                                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--color-bg-base)', borderRadius: '8px', cursor: 'pointer' }}>
                                     <div>
-                                        <p style={{ fontSize: '14px', color: 'var(--color-text-primary)', margin: 0 }}>Meeting Alerts</p>
+                                        <p style={{ fontSize: '14px', color: 'var(--color-text-primary)', margin: '0 0 4px 0', fontWeight: '500' }}>Meeting Alerts</p>
                                         <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Get notified when meetings are processed</p>
                                     </div>
                                     <input
@@ -203,7 +205,7 @@ export default function SettingsPage() {
 
                                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--color-bg-base)', borderRadius: '8px', cursor: 'pointer' }}>
                                     <div>
-                                        <p style={{ fontSize: '14px', color: 'var(--color-text-primary)', margin: 0 }}>Push Notifications</p>
+                                        <p style={{ fontSize: '14px', color: 'var(--color-text-primary)', margin: '0 0 4px 0', fontWeight: '500' }}>Push Notifications</p>
                                         <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Browser push notifications</p>
                                     </div>
                                     <input
@@ -283,6 +285,10 @@ export default function SettingsPage() {
                                 </label>
                             </div>
                         </section>
+                    )}
+
+                    {activeTab === 'billing' && (
+                        <SubscriptionPage />
                     )}
                 </div>
             </div>
