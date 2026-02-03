@@ -5,7 +5,7 @@ import { RegisterForm } from "@/components/ui/register-form";
 import { OTPForm } from "@/components/ui/otp-form";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 const BRAND = 'Minute Maker';
 
 export default function AuthPage() {

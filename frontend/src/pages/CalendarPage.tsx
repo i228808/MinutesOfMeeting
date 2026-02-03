@@ -36,7 +36,7 @@ interface FormattedEvent {
     resource: CalendarEvent;
 }
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 const eventColors: Record<string, string> = {
     deadline: '#f59e0b',

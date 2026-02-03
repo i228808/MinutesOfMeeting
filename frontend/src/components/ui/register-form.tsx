@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Lock, Mail, ArrowRight, UserPlus, Loader2 } from 'lucide-react';
+import { API_URL } from '../../config';
 
 interface RegisterFormProps {
     onSubmit?: (name: string, email: string, password: string) => void;
@@ -35,7 +36,7 @@ export function RegisterForm({ onSubmit, onSwitchToLogin, loading = false }: Reg
     };
 
     const handleGoogleSignup = () => {
-        window.location.href = 'http://localhost:5000/api/auth/google';
+        window.location.href = `${API_URL}/auth/google`;
     };
 
     return (

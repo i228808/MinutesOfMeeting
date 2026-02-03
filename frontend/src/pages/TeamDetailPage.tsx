@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Users, Copy, Check, Calendar, Plus, Clock, FileText, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 interface Member {
     _id: string;

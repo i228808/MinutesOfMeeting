@@ -25,6 +25,8 @@ interface Meeting {
     actors?: Array<{ name: string; role: string }>;
 }
 
+import { API_URL } from '../config';
+
 export default function MeetingsPage() {
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function MeetingsPage() {
     const fetchMeetings = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/meetings', {
+            const res = await fetch(`${API_URL}/meetings`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -61,7 +63,7 @@ export default function MeetingsPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/meetings/${id}`, {
+            const res = await fetch(`${API_URL}/meetings/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

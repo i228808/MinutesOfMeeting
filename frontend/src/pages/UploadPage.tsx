@@ -31,7 +31,7 @@ interface AnalysisData {
     key_decisions: Decision[];
 }
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 export default function UploadPage() {
     const navigate = useNavigate();

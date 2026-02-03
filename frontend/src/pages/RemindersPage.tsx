@@ -23,7 +23,7 @@ interface Reminder {
     created_at: string;
 }
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 export default function RemindersPage() {
     const [reminders, setReminders] = useState<Reminder[]>([]);

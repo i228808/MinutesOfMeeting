@@ -21,7 +21,7 @@ interface Contract {
     created_at: string;
 }
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 const statusColors: Record<string, string> = {
     DRAFTED: '#3b82f6',

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
+import { API_URL } from './config';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -72,7 +73,7 @@ function AuthCallback() {
   if (token) {
     localStorage.setItem('token', token);
     // Fetch user data
-    fetch('http://localhost:5000/api/auth/me', {
+    fetch(`${API_URL}/auth/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())

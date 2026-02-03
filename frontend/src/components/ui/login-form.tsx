@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { User, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { API_URL } from '../../config';
 
 // Vertex shader source code
 const vertexSmokeySource = `
@@ -187,7 +188,7 @@ export function LoginForm({ onSubmit, onSwitchToRegister, loading = false }: Log
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:5000/api/auth/google';
+        window.location.href = `${API_URL}/auth/google`;
     };
 
     return (

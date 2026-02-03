@@ -49,7 +49,7 @@ const TIER_LIMITS = {
     UNLIMITED: { uploads: Infinity, audio: Infinity, contracts: Infinity }
 };
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 export default function DashboardOverview() {
     const [user, setUser] = useState<any>(null);

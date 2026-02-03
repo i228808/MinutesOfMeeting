@@ -66,7 +66,7 @@ interface Meeting {
     error_message?: string;
 }
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 export default function MeetingDetailPage() {
     const { id } = useParams();
