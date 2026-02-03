@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import Footer from '../components/Footer';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 interface StaticPageLayoutProps {
     title: string;

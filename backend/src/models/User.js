@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema({
         enum: ['FREE', 'STARTER', 'PRO', 'UNLIMITED'],
         default: 'FREE'
     },
+    teams: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Team'
+    }],
     google_access_token: {
         type: String,
         default: null

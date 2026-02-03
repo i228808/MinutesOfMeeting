@@ -17,6 +17,7 @@ const googleRoutes = require('./routes/google.routes');
 const reminderRoutes = require('./routes/reminder.routes');
 const streamRoutes = require('./routes/stream.routes');
 const calendarRoutes = require('./routes/calendar.routes');
+const teamRoutes = require('./routes/team.routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/error.middleware');
@@ -86,6 +87,7 @@ app.use('/api/google', googleRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/realtime', streamRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/teams', teamRoutes);
 
 // 404 handler
 app.use((req, res) => {

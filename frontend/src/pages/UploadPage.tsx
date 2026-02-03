@@ -48,6 +48,29 @@ export default function UploadPage() {
     const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
     const [editingTitle, setEditingTitle] = useState('');
 
+    // Team selection
+    const [teams, setTeams] = useState<{ _id: string; name: string }[]>([]);
+    const [selectedTeam, setSelectedTeam] = useState<string>('');
+
+    // Fetch teams on mount
+    useState(() => {
+        const fetchTeams = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${API_URL}/teams`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setTeams(data.teams);
+                }
+            } catch (error) {
+                console.error('Failed to fetch teams', error);
+            }
+        };
+        fetchTeams();
+    });
+
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -83,6 +106,9 @@ export default function UploadPage() {
                 const formData = new FormData();
                 formData.append('title', title.trim());
                 formData.append('audio', selectedFile);
+                if (selectedTeam) {
+                    formData.append('team_id', selectedTeam);
+                }
 
                 res = await fetch(`${API_URL}/meetings/analyze`, {
                     method: 'POST',
@@ -94,7 +120,11 @@ export default function UploadPage() {
                 res = await fetch(`${API_URL}/meetings/analyze`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: title.trim(), transcript: textTranscript.trim() })
+                    body: JSON.stringify({
+                        title: title.trim(),
+                        transcript: textTranscript.trim(),
+                        team_id: selectedTeam || null
+                    })
                 });
             }
 
@@ -128,7 +158,8 @@ export default function UploadPage() {
                     actors: analysis.actors,
                     responsibilities: analysis.responsibilities,
                     deadlines: analysis.deadlines,
-                    key_decisions: analysis.key_decisions
+                    key_decisions: analysis.key_decisions,
+                    team_id: selectedTeam || null
                 })
             });
 
@@ -142,6 +173,25 @@ export default function UploadPage() {
             setStatus('error');
         }
     };
+
+    // ... rest of helper functions ... (omitted for brevity, assume they exist) ...
+
+    /* UI Rendering REMAINS MOSTLY SAME until the Input form */
+
+    // NOTE: Because replace_file_content requires context match, I'll target the block and insert logic. 
+    // BUT the replace block above includes logic changes. I need to handle the UI part separately or combine.
+    // Given the tool constraints, let's just do logic first? No, UI is needed to select team.
+    // I will try to target the render part involving the Title input to inject the Team selector.
+
+    // ... (helper functions omitted from replacement for now, I only replaced the top state/logic) ... 
+
+    // Wait, I can't easily replace just the logic and UI in one go if they are far apart.
+    // I replaced the logic block (state + handleAnalyze + handleConfirm).
+    // Now I need to inject the UI selector.
+
+    // I will return the logic block update first.
+
+
 
     // Update handlers
     const updateResponsibility = (index: number, field: keyof Responsibility, value: string) => {
@@ -368,10 +418,10 @@ John: I'll call them today and get that sorted. Good work everyone!`;
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                <button onClick={() => setMode('text')} className={mode === 'text' ? 'btn-primary' : 'btn-secondary'} style={{ flex: 1, maxWidth: '200px' }}>
+                <button onClick={() => setMode('text')} className={`btn ${mode === 'text' ? 'btn-primary' : 'btn-secondary'}`} style={{ flex: 1, maxWidth: '200px' }}>
                     <FileTextIcon size={18} style={{ marginRight: '8px' }} /> Text Transcript
                 </button>
-                <button onClick={() => setMode('audio')} className={mode === 'audio' ? 'btn-primary' : 'btn-secondary'} style={{ flex: 1, maxWidth: '200px' }}>
+                <button onClick={() => setMode('audio')} className={`btn ${mode === 'audio' ? 'btn-primary' : 'btn-secondary'}`} style={{ flex: 1, maxWidth: '200px' }}>
                     <FileAudio size={18} style={{ marginRight: '8px' }} /> Audio File
                 </button>
             </div>
@@ -384,9 +434,26 @@ John: I'll call them today and get that sorted. Good work everyone!`;
             )}
 
             <div className="dashboard-card" style={{ padding: '32px' }}>
-                <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>Meeting Title *</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="glass-input" placeholder="e.g., Weekly Team Standup" />
+                <div style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>Meeting Title *</label>
+                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="glass-input" placeholder="e.g., Weekly Team Standup" />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>Team Context (Optional)</label>
+                        <select
+                            value={selectedTeam}
+                            onChange={(e) => setSelectedTeam(e.target.value)}
+                            className="glass-input"
+                            style={{ width: '100%', appearance: 'none', backgroundImage: 'none' }} // Simple styling fix
+                        >
+                            <option value="">Personal Meeting (No Team)</option>
+                            {teams.map(team => (
+                                <option key={team._id} value={team._id}>{team.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 {mode === 'text' && (
@@ -394,7 +461,7 @@ John: I'll call them today and get that sorted. Good work everyone!`;
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.8)' }}>Transcript *</label>
                             <button type="button" onClick={() => { setTextTranscript(sampleTranscript); if (!title) setTitle('Weekly Team Standup'); }}
-                                style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: '6px', color: '#fbbf24', fontSize: '12px', cursor: 'pointer' }}>
+                                className="btn btn-secondary" style={{ fontSize: '12px', padding: '6px 12px' }}>
                                 <Sparkles size={14} style={{ marginRight: '6px' }} /> Load Sample
                             </button>
                         </div>
@@ -426,7 +493,7 @@ John: I'll call them today and get that sorted. Good work everyone!`;
                     </div>
                 )}
 
-                <button onClick={handleAnalyze} className="btn-primary">
+                <button onClick={handleAnalyze} className="btn btn-primary">
                     <Sparkles size={18} style={{ marginRight: '8px' }} /> Analyze Transcript
                 </button>
             </div>

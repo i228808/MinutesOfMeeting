@@ -6,7 +6,7 @@ import { OTPForm } from "@/components/ui/otp-form";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 const API_URL = 'http://localhost:5000/api';
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 export default function AuthPage() {
     const [view, setView] = useState<'login' | 'register' | 'otp'>('login');

@@ -25,7 +25,7 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 // The 4 steps of our workflow
 const flowSteps = [

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, Bug, Wrench, Star } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const releases = [
     { version: '2.4.0', date: 'Jan 28, 2025', type: 'feature', title: 'AI Contract Generation', items: ['Generate contracts from meeting content', 'Support for 20+ jurisdictions', 'Automatic compliance checks'] },

@@ -9,8 +9,13 @@ const { paginate, paginateResponse } = require('../utils/helpers');
 /**
  * Upload a meeting transcript or audio file
  */
+// ... imports remain the same
+
+/**
+ * Upload a meeting transcript or audio file
+ */
 const uploadTranscript = asyncHandler(async (req, res) => {
-    const { title, transcript } = req.body;
+    const { title, transcript, team_id } = req.body;
 
     // Check upload limit
     const canUpload = await LimitService.canPerformAction(req.user._id, 'upload');
@@ -49,6 +54,7 @@ const uploadTranscript = asyncHandler(async (req, res) => {
     // Create meeting record
     const meeting = await MeetingTranscript.create({
         user_id: req.user._id,
+        team_id: team_id || null, // Optional team association
         title: title || `Meeting ${new Date().toLocaleDateString()}`,
         raw_transcript: rawTranscript,
         audio_file_path: audioFilePath,
@@ -67,7 +73,8 @@ const uploadTranscript = asyncHandler(async (req, res) => {
             status: meeting.status,
             has_audio: !!audioFilePath,
             has_transcript: !!rawTranscript,
-            created_at: meeting.created_at
+            created_at: meeting.created_at,
+            team_id: meeting.team_id
         }
     });
 });
@@ -120,11 +127,25 @@ const processTranscript = asyncHandler(async (req, res) => {
             return res.status(400).json({ error: 'No transcript to process' });
         }
 
-        // Step 2: Analyze with LLM
+        // Step 1.5: Get Team Members Context if Team Meeting
+        let teamMembers = [];
+        if (meeting.team_id) {
+            const Team = require('../models/Team');
+            const team = await Team.findById(meeting.team_id).populate('members', 'name email _id');
+            if (team && team.members) {
+                teamMembers = team.members.map(m => ({
+                    name: m.name,
+                    id: m._id.toString(),
+                    email: m.email
+                }));
+            }
+        }
+
+        // Step 2: Analyze with LLM (Pass team members for context)
         meeting.status = 'PROCESSING';
         await meeting.save();
 
-        const analysis = await llmService.analyzeTranscript(meeting.raw_transcript);
+        const analysis = await llmService.analyzeTranscript(meeting.raw_transcript, teamMembers);
 
         // Update meeting with analysis results
         meeting.summary = analysis.summary || '';
@@ -138,37 +159,73 @@ const processTranscript = asyncHandler(async (req, res) => {
 
         await meeting.save();
 
-        // Auto-create calendar events from deadlines
+        // Auto-create calendar events & reminders from deadlines
         if (meeting.processed_deadlines?.length > 0) {
+            const Reminder = require('../models/Reminder');
             try {
                 for (const deadline of meeting.processed_deadlines) {
                     if (!deadline.deadline) continue;
 
-                    // Check if already exists
+                    // Determine Target User (intelligent matching)
+                    let targetUserId = req.user._id; // Default to uploader if no match
+                    let targetUserName = 'You';
+
+                    if (meeting.team_id && deadline.actor && teamMembers.length > 0) {
+                        // Fuzzy match actor name to team member
+                        const normalizedActor = deadline.actor.toLowerCase();
+                        const matchedMember = teamMembers.find(m =>
+                            m.name.toLowerCase().includes(normalizedActor) ||
+                            normalizedActor.includes(m.name.toLowerCase())
+                        );
+
+                        if (matchedMember) {
+                            targetUserId = matchedMember.id;
+                            targetUserName = matchedMember.name;
+                        }
+                    }
+
+                    // Check if already exists for THAT user
                     const existing = await CalendarEvent.findOne({
-                        user_id: req.user._id,
+                        user_id: targetUserId,
                         meeting_id: meeting._id,
                         title: deadline.task
                     });
 
                     if (!existing) {
                         const deadlineDate = new Date(deadline.deadline);
+                        if (isNaN(deadlineDate.getTime())) continue;
+
+                        // Create Calendar Event
                         await CalendarEvent.create({
-                            user_id: req.user._id,
+                            user_id: targetUserId,
                             meeting_id: meeting._id,
                             title: deadline.task,
-                            description: `Assigned to: ${deadline.actor || 'Unassigned'}\nFrom meeting: ${meeting.title}`,
+                            description: `Action Item from: ${meeting.title}\nAssigned to: ${deadline.actor}`,
                             start_time: deadlineDate,
                             end_time: new Date(deadlineDate.getTime() + 60 * 60 * 1000),
                             all_day: true,
                             type: 'deadline',
                             color: '#f59e0b'
                         });
+
+                        // Create Reminder (1 day before)
+                        const reminderDate = new Date(deadlineDate.getTime() - 24 * 60 * 60 * 1000);
+                        if (reminderDate > new Date()) {
+                            await Reminder.create({
+                                user_id: targetUserId,
+                                meeting_id: meeting._id,
+                                task: deadline.task,
+                                message: `Reminder: "${deadline.task}" is due tomorrow. (From Team Meeting: ${meeting.title})`,
+                                remind_at: reminderDate,
+                                reminder_type: 'EMAIL',
+                                status: 'PENDING'
+                            });
+                        }
                     }
                 }
-                console.log(`Created ${meeting.processed_deadlines.length} calendar events from meeting deadlines`);
+                console.log(`Processed ${meeting.processed_deadlines.length} deadlines with intelligent assignment`);
             } catch (calError) {
-                console.error('Failed to create calendar events:', calError);
+                console.error('Failed to create calendar events/reminders:', calError);
             }
         }
 
@@ -209,26 +266,68 @@ const processTranscript = asyncHandler(async (req, res) => {
 const getMeeting = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const meeting = await MeetingTranscript.findOne({
-        _id: id,
-        user_id: req.user._id
-    });
+    // Find meeting by ID and populate team info
+    const meeting = await MeetingTranscript.findById(id).populate('team_id');
 
     if (!meeting) {
         return res.status(404).json({ error: 'Meeting not found' });
     }
 
-    res.json({ meeting });
+    // Determine edit permission
+    let canEdit = false;
+    let hasAccess = false;
+
+    const isMeetingOwner = meeting.user_id.toString() === req.user._id.toString();
+
+    if (meeting.team_id) {
+        // Team meeting - check team membership first
+        const userTeams = req.user.teams || [];
+        const isTeamMember = userTeams.some(t => {
+            const tId = t._id ? t._id.toString() : t.toString();
+            return tId === (meeting.team_id._id || meeting.team_id).toString();
+        });
+
+        if (isTeamMember || isMeetingOwner) {
+            hasAccess = true;
+            // For team meetings, ONLY team owner can edit
+            const Team = require('../models/Team');
+            const team = await Team.findById(meeting.team_id._id || meeting.team_id);
+            canEdit = team && team.owner_id.toString() === req.user._id.toString();
+        }
+    } else {
+        // Personal meeting - only owner has access AND can edit
+        if (isMeetingOwner) {
+            hasAccess = true;
+            canEdit = true;
+        }
+    }
+
+    if (!hasAccess) {
+        return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    return res.json({ meeting, can_edit: canEdit });
 });
 
 /**
  * List all user meetings
  */
 const listMeetings = asyncHandler(async (req, res) => {
-    const { page, limit, status, search } = req.query;
+    const { page, limit, status, search, team_id } = req.query;
     const { skip, limit: limitNum, page: pageNum } = paginate(page, limit);
 
-    const query = { user_id: req.user._id };
+    // Base query: Personal meetings OR Team meetings
+    let query = {};
+
+    if (team_id) {
+        // Explicitly requesting team meetings
+        query = { team_id: team_id };
+        // Check if user is member of this team... (Optional check, but safe given middleware often handles User info)
+        // For strict security, we could verify membership here, but getTeamDetails does it.
+    } else {
+        // Default: Personal meetings only (no team)
+        query = { user_id: req.user._id, team_id: null };
+    }
 
     if (status) {
         query.status = status.toUpperCase();
@@ -436,7 +535,7 @@ const createCalendarEvents = asyncHandler(async (req, res) => {
  * Handles both text transcript and audio file (transcribes first)
  */
 const analyzeOnly = asyncHandler(async (req, res) => {
-    const { transcript, title } = req.body;
+    const { transcript, title, team_id } = req.body;
     let rawTranscript = transcript || '';
 
     // If audio file was uploaded, transcribe it first
@@ -464,8 +563,22 @@ const analyzeOnly = asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'Transcript or audio file is required' });
     }
 
+    // Get Team Members Context if Team Meeting
+    let teamMembers = [];
+    if (team_id) {
+        const Team = require('../models/Team');
+        const team = await Team.findById(team_id).populate('members', 'name email _id');
+        if (team && team.members) {
+            teamMembers = team.members.map(m => ({
+                name: m.name,
+                id: m._id.toString(),
+                email: m.email
+            }));
+        }
+    }
+
     // Analyze with LLM
-    const analysis = await llmService.analyzeTranscript(rawTranscript);
+    const analysis = await llmService.analyzeTranscript(rawTranscript, teamMembers);
 
     res.json({
         success: true,
@@ -496,7 +609,8 @@ const confirmMeeting = asyncHandler(async (req, res) => {
         roles,
         responsibilities,
         deadlines,
-        key_decisions
+        key_decisions,
+        team_id
     } = req.body;
 
     if (!transcript) {
@@ -516,6 +630,7 @@ const confirmMeeting = asyncHandler(async (req, res) => {
     // Create meeting with all analyzed data
     const meeting = await MeetingTranscript.create({
         user_id: req.user._id,
+        team_id: team_id || null,
         title: title || `Meeting ${new Date().toLocaleDateString()}`,
         raw_transcript: transcript,
         summary: summary || '',
@@ -534,6 +649,20 @@ const confirmMeeting = asyncHandler(async (req, res) => {
     const createdEvents = [];
     const createdReminders = [];
 
+    // Fetch team members for assignment context
+    let teamMembers = [];
+    if (team_id) {
+        const Team = require('../models/Team');
+        const team = await Team.findById(team_id).populate('members', 'name email _id');
+        if (team && team.members) {
+            teamMembers = team.members.map(m => ({
+                name: m.name,
+                id: m._id.toString(),
+                email: m.email
+            }));
+        }
+    }
+
     if (deadlines?.length > 0) {
         const Reminder = require('../models/Reminder');
 
@@ -541,10 +670,29 @@ const confirmMeeting = asyncHandler(async (req, res) => {
             if (!deadline.deadline) continue;
 
             const deadlineDate = new Date(deadline.deadline);
+            if (isNaN(deadlineDate.getTime())) continue;
+
+            // Determine Target User (intelligent matching)
+            let targetUserId = req.user._id; // Default to uploader if no match
+            let targetUserName = 'You';
+
+            if (team_id && deadline.actor && teamMembers.length > 0) {
+                // Fuzzy match actor name to team member
+                const normalizedActor = deadline.actor.toLowerCase();
+                const matchedMember = teamMembers.find(m =>
+                    m.name.toLowerCase().includes(normalizedActor) ||
+                    normalizedActor.includes(m.name.toLowerCase())
+                );
+
+                if (matchedMember) {
+                    targetUserId = matchedMember.id;
+                    targetUserName = matchedMember.name;
+                }
+            }
 
             // Create calendar event
             const event = await CalendarEvent.create({
-                user_id: req.user._id,
+                user_id: targetUserId,
                 meeting_id: meeting._id,
                 title: deadline.task,
                 description: `Assigned to: ${deadline.actor || 'Unassigned'}\nFrom meeting: ${meeting.title}`,
@@ -560,7 +708,7 @@ const confirmMeeting = asyncHandler(async (req, res) => {
             const reminderDate = new Date(deadlineDate.getTime() - 24 * 60 * 60 * 1000);
             if (reminderDate > new Date()) {
                 const reminder = await Reminder.create({
-                    user_id: req.user._id,
+                    user_id: targetUserId,
                     meeting_id: meeting._id,
                     task: deadline.task,
                     message: `Reminder: "${deadline.task}" is due tomorrow. Assigned to: ${deadline.actor || 'Unassigned'}`,
@@ -603,13 +751,33 @@ const updateMeeting = asyncHandler(async (req, res) => {
         key_decisions
     } = req.body;
 
-    const meeting = await MeetingTranscript.findOne({
-        _id: id,
-        user_id: req.user._id
-    });
+    const meeting = await MeetingTranscript.findById(id).populate('team_id');
 
     if (!meeting) {
         return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    // Authorization check
+    if (meeting.team_id) {
+        // Team meeting - only team owner can edit
+        const Team = require('../models/Team');
+        const team = await Team.findById(meeting.team_id._id || meeting.team_id);
+
+        if (!team) {
+            return res.status(404).json({ error: 'Associated team not found' });
+        }
+
+        if (team.owner_id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                error: 'Permission denied',
+                message: 'Only the team owner can edit team meeting details'
+            });
+        }
+    } else {
+        // Personal meeting - only owner can edit
+        if (meeting.user_id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: 'Meeting not found' });
+        }
     }
 
     // Update fields if provided
@@ -697,6 +865,73 @@ const updateMeeting = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Retry analysis for meetings with PENDING_ANALYSIS status
+ */
+const retryAnalysis = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const meeting = await MeetingTranscript.findOne({
+        _id: id,
+        user_id: req.user._id
+    });
+
+    if (!meeting) {
+        return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    if (!['PENDING_ANALYSIS', 'FAILED'].includes(meeting.status)) {
+        return res.status(400).json({
+            error: 'Cannot retry',
+            message: `Meeting status is ${meeting.status}. Only PENDING_ANALYSIS or FAILED meetings can be retried.`
+        });
+    }
+
+    if (!meeting.raw_transcript || meeting.raw_transcript.length < 10) {
+        return res.status(400).json({
+            error: 'No transcript available',
+            message: 'This meeting has no transcript to analyze.'
+        });
+    }
+
+    // Update status to processing
+    meeting.status = 'PROCESSING';
+    meeting.error_message = null;
+    await meeting.save();
+
+    // Run analysis async
+    res.json({
+        success: true,
+        message: 'Analysis retry started. Refresh in a few moments to see results.',
+        meeting_id: meeting._id
+    });
+
+    // Async analysis
+    (async () => {
+        try {
+            console.log(`[RetryAnalysis] Starting for meeting ${meeting._id}`);
+            const analysis = await llmService.analyzeTranscript(meeting.raw_transcript);
+
+            meeting.summary = analysis.summary || '';
+            meeting.processed_actors = analysis.actors || [];
+            meeting.processed_roles = analysis.roles || [];
+            meeting.processed_responsibilities = analysis.responsibilities || [];
+            meeting.processed_deadlines = analysis.deadlines || [];
+            meeting.key_decisions = analysis.key_decisions || [];
+            meeting.status = 'COMPLETED';
+            meeting.error_message = null;
+            await meeting.save();
+
+            console.log(`[RetryAnalysis] Completed for meeting ${meeting._id}`);
+        } catch (err) {
+            console.error(`[RetryAnalysis] Failed for meeting ${meeting._id}:`, err);
+            meeting.status = 'PENDING_ANALYSIS';
+            meeting.error_message = `Retry failed: ${err.message}`;
+            await meeting.save();
+        }
+    })();
+});
+
 module.exports = {
     uploadTranscript,
     processTranscript,
@@ -707,5 +942,6 @@ module.exports = {
     createCalendarEvents,
     analyzeOnly,
     confirmMeeting,
-    updateMeeting
+    updateMeeting,
+    retryAnalysis
 };

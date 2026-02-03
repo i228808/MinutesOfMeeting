@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, Book, Code, FileText, ArrowRight, Search, ChevronRight } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const docSections = [
     {

@@ -11,40 +11,77 @@ class LLMService {
     }
 
     /**
-     * Make a request to OpenRouter API
+     * Make a request to OpenRouter API with retry logic
+     * @param {Array} messages - Messages array for the chat
+     * @param {Object} options - Request options
+     * @param {number} retries - Number of retries remaining (internal)
      */
-    async makeRequest(messages, options = {}) {
-        const response = await fetch(this.baseUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:5173',
-                'X-Title': 'MeetingMinutes AI'
-            },
-            body: JSON.stringify({
-                model: options.model || this.model,
-                messages,
-                temperature: options.temperature || 0.7,
-                max_tokens: options.max_tokens || 4096
-            })
-        });
+    async makeRequest(messages, options = {}, retries = 3) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(`OpenRouter API Error: ${error.error?.message || response.statusText}`);
+        try {
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:5173',
+                    'X-Title': 'MeetingMinutes AI'
+                },
+                body: JSON.stringify({
+                    model: options.model || this.model,
+                    messages,
+                    temperature: options.temperature || 0.7,
+                    max_tokens: options.max_tokens || 4096
+                }),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeout);
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(`OpenRouter API Error: ${error.error?.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0]?.message?.content || '';
+        } catch (error) {
+            clearTimeout(timeout);
+
+            // Check if it's a retryable error
+            const isRetryable = error.name === 'AbortError' ||
+                error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+                error.cause?.code === 'ECONNRESET' ||
+                error.cause?.code === 'ENOTFOUND' ||
+                error.message.includes('fetch failed');
+
+            if (isRetryable && retries > 0) {
+                const delay = (4 - retries) * 2000; // 2s, 4s, 6s backoff
+                console.log(`[LLM Service] Request failed, retrying in ${delay}ms... (${retries} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return this.makeRequest(messages, options, retries - 1);
+            }
+
+            throw error;
         }
-
-        const data = await response.json();
-        return data.choices[0]?.message?.content || '';
     }
 
     /**
      * Analyze a meeting transcript and extract all relevant information
      * Also detects if the conversation contains contract-worthy elements
      */
-    async analyzeTranscript(transcript) {
+    async analyzeTranscript(transcript, teamMembers = []) {
+        let teamContext = '';
+        if (teamMembers && teamMembers.length > 0) {
+            teamContext = `\nKNOWN TEAM MEMBERS (Context for Speaker Identification & Assignments):\n` +
+                teamMembers.map(m => `- ${m.name} (${m.email})`).join('\n') +
+                `\n\nUse the above list to correctly identify speakers and assign tasks/deadlines. If a name in the transcript matches a team member (even partially), use their full name from this list.`;
+        }
+
         const prompt = `You are an expert meeting analyst. Analyze the following meeting transcript and extract structured information.
+${teamContext}
 
 TRANSCRIPT:
 ${transcript}

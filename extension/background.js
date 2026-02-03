@@ -51,7 +51,8 @@ async function startRecording(data) {
                 meetingUrl: tab.url,
                 platform: identifyPlatform(tab.url),
                 serverUrl: data.serverUrl,
-                title: data.title
+                title: data.title,
+                team_id: data.team_id || null
             }
         });
 

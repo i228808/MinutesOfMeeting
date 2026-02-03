@@ -1,6 +1,6 @@
 import StaticPageLayout, { legalStyles } from '../layouts/StaticPageLayout';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 export default function PrivacyPage() {
     return (
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
                     If you have questions about this Privacy Policy, please contact us at:
                 </p>
                 <p style={legalStyles.paragraph}>
-                    <strong>Email:</strong> privacy@getbrevity.com<br />
+                    <strong>Email:</strong> privacy@minutemaker.com<br />
                     <strong>Address:</strong> 123 Innovation Drive, San Francisco, CA 94105
                 </p>
             </div>

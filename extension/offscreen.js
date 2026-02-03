@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function startRecording(params) {
     try {
         data = params; // Store for stopRecording
-        const { streamId, token, meetingUrl, platform, serverUrl, title } = params;
+        const { streamId, token, meetingUrl, platform, serverUrl, title, team_id } = params;
         const systemStream = await navigator.mediaDevices.getUserMedia({
             audio: {
                 mandatory: {
@@ -70,7 +70,8 @@ async function startRecording(params) {
             },
             body: JSON.stringify({
                 meeting_url: meetingUrl,
-                platform: platform
+                platform: platform,
+                team_id: team_id || null
             })
         });
 
@@ -125,7 +126,8 @@ async function stopRecording() {
                 },
                 body: JSON.stringify({
                     session_id: sessionId,
-                    title: data.title || 'Recorded Meeting'
+                    title: data.title || 'Recorded Meeting',
+                    team_id: data.team_id || null
                 })
             });
         } catch (err) {

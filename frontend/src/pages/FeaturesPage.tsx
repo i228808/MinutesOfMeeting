@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import Footer from '../components/Footer';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 // Detailed feature sections with UI descriptions
 const featureSections = [

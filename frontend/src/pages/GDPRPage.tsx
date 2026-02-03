@@ -1,6 +1,6 @@
 import StaticPageLayout, { legalStyles } from '../layouts/StaticPageLayout';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 export default function GDPRPage() {
     return (
@@ -45,7 +45,7 @@ export default function GDPRPage() {
                 <p style={legalStyles.paragraph}>
                     For business customers who require a Data Processing Agreement (DPA) to meet their GDPR
                     compliance obligations, we offer a standard DPA that can be executed upon request.
-                    Contact our legal team at legal@getbrevity.com to request a DPA.
+                    Contact our legal team at legal@minutemaker.com to request a DPA.
                 </p>
             </div>
 
@@ -81,7 +81,7 @@ export default function GDPRPage() {
                     For GDPR-related inquiries, please contact our Data Protection Officer:
                 </p>
                 <p style={legalStyles.paragraph}>
-                    <strong>Email:</strong> dpo@getbrevity.com<br />
+                    <strong>Email:</strong> dpo@minutemaker.com<br />
                     <strong>Address:</strong> 123 Innovation Drive, San Francisco, CA 94105
                 </p>
             </div>

@@ -12,7 +12,7 @@ const activeProcessors = new Map();
  * Start a new streaming session
  */
 const startSession = asyncHandler(async (req, res) => {
-    const { meeting_url, platform } = req.body;
+    const { meeting_url, platform, team_id } = req.body;
 
     // Check if user can use extension
     const canStream = await LimitService.canPerformAction(req.user._id, 'extension');
@@ -42,7 +42,8 @@ const startSession = asyncHandler(async (req, res) => {
         processor,
         userId: req.user._id.toString(),
         logId: streamLog._id,
-        partialTranscript: ''
+        partialTranscript: '',
+        teamId: team_id || null
     });
 
     res.json({
@@ -176,6 +177,7 @@ const endSession = asyncHandler(async (req, res) => {
         if (true) { // Always enter
             meeting = await MeetingTranscript.create({
                 user_id: req.user._id,
+                team_id: session.teamId || null,
                 title: title || `Live Meeting - ${new Date().toLocaleDateString()}`,
                 raw_transcript: effectiveTranscript,
                 audio_duration_minutes: durationMinutes,
@@ -211,9 +213,11 @@ const endSession = asyncHandler(async (req, res) => {
                     console.log(`Analysis complete for meeting ${meeting._id}`);
                 } catch (analysisErr) {
                     console.error(`Analysis failed for meeting ${meeting._id}:`, analysisErr);
-                    meeting.status = 'FAILED';
-                    meeting.error_message = analysisErr.message;
+                    // Use PENDING_ANALYSIS so user can retry - transcript is preserved
+                    meeting.status = 'PENDING_ANALYSIS';
+                    meeting.error_message = `Analysis failed: ${analysisErr.message}. You can retry from the meeting details page.`;
                     await meeting.save();
+                    console.log(`Meeting ${meeting._id} saved with PENDING_ANALYSIS status - transcript preserved for retry`);
                 }
             })();
         }

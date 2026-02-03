@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Stopwatch circle -->
+  <circle cx="16" cy="18" r="12" fill="none" stroke="#FF6B4A" stroke-width="2.5"/>
+  
+  <!-- Stopwatch button -->
+  <rect x="14" y="2" width="4" height="4" rx="1" fill="#FF6B4A"/>
+  
+  <!-- Checkmark inside -->
+  <path d="M10 18l4 4 8-9" stroke="#FF6B4A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Mail, MapPin, Phone, Send, MessageSquare, Clock } from 'lucide-react';
 import { useState } from 'react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({ name: '', email: '', company: '', message: '', type: 'sales' });
@@ -43,7 +43,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '14px', color: '#6B6B70', marginBottom: '4px' }}>Email us</p>
-                                    <a href="mailto:hello@getbrevity.com" style={{ fontSize: '16px', fontWeight: '500', color: '#F5F5F7' }}>hello@getbrevity.com</a>
+                                    <a href="mailto:hello@minutemaker.com" style={{ fontSize: '16px', fontWeight: '500', color: '#F5F5F7' }}>hello@minutemaker.com</a>
                                 </div>
                             </div>
 

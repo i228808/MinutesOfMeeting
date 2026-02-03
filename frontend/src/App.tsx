@@ -29,6 +29,8 @@ import IntegrationsPage from './pages/IntegrationsPage';
 import StatusPage from './pages/StatusPage';
 import ChangelogPage from './pages/ChangelogPage';
 import ContactPage from './pages/ContactPage';
+import TeamsPage from './pages/TeamsPage';
+import TeamDetailPage from './pages/TeamDetailPage';
 
 import PressPage from './pages/PressPage';
 
@@ -220,6 +222,26 @@ function App() {
               <PrivateRoute>
                 <DashboardLayout>
                   <SubscriptionPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/teams"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <TeamsPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/teams/:id"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <TeamDetailPage />
                 </DashboardLayout>
               </PrivateRoute>
             }

@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
+import BrowserSelectModal from '../components/BrowserSelectModal';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -10,29 +11,31 @@ import {
     Upload,
     Mic,
     CreditCard,
-    Sparkles
+    Sparkles,
+    Users
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: ReactNode;
 }
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/dashboard/meetings', label: 'Meetings', icon: FileText },
     { path: '/dashboard/contracts', label: 'Contracts', icon: FileSignature },
     { path: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
+    { path: '/dashboard/teams', label: 'Teams', icon: Users },
     { path: '/dashboard/reminders', label: 'Reminders', icon: Bell },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const location = useLocation();
 
-    // Get user from localStorage
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : { name: 'User', email: 'user@example.com' };
+    const [showBrowserModal, setShowBrowserModal] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -128,7 +131,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div style={{ padding: '24px', borderTop: '1px solid var(--color-border-subtle)' }}>
                     {['STARTER', 'PRO', 'UNLIMITED'].includes(user.subscription_tier || 'FREE') && (
                         <button
-                            onClick={() => alert("To use Live Recording:\n1. Open Chrome Extensions\n2. Load Unpacked -> select 'extension' folder\n3. Click 'Start Recording' in the popup!")}
+                            onClick={() => setShowBrowserModal(true)}
                             className="btn btn-secondary"
                             style={{
                                 width: '100%',
@@ -226,7 +229,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {children}
                 </div>
             </main>
+
+            {/* Browser Selection Modal */}
+            <BrowserSelectModal isOpen={showBrowserModal} onClose={() => setShowBrowserModal(false)} />
         </div>
     );
 }
-

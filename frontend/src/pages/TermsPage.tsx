@@ -1,6 +1,6 @@
 import StaticPageLayout, { legalStyles } from '../layouts/StaticPageLayout';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 export default function TermsPage() {
     return (
@@ -125,7 +125,7 @@ export default function TermsPage() {
                     For questions about these Terms, please contact us at:
                 </p>
                 <p style={legalStyles.paragraph}>
-                    <strong>Email:</strong> legal@getbrevity.com<br />
+                    <strong>Email:</strong> legal@minutemaker.com<br />
                     <strong>Address:</strong> 123 Innovation Drive, San Francisco, CA 94105
                 </p>
             </div>

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const footerLinks = {
     product: [
@@ -82,7 +82,7 @@ export default function Footer() {
 
                 {/* Bottom bar */}
                 <div style={{ paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                    <p style={{ fontSize: '13px', color: '#6B6B70' }}>© 2025 {BRAND}. All rights reserved.</p>
+                    <p style={{ fontSize: '13px', color: '#6B6B70' }}>© 2026 {BRAND}. All rights reserved.</p>
                     <div style={{ display: 'flex', gap: '24px' }}>
                         <a href="#" style={{ fontSize: '13px', color: '#6B6B70', textDecoration: 'none' }}>Twitter</a>
                         <a href="#" style={{ fontSize: '13px', color: '#6B6B70', textDecoration: 'none' }}>LinkedIn</a>

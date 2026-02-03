@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Check, ArrowRight, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const pricingTiers = [
     {

@@ -6,6 +6,11 @@ const meetingTranscriptSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    team_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Team',
+        default: null
+    },
     title: {
         type: String,
         required: true,

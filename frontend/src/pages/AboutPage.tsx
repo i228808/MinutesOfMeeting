@@ -11,7 +11,7 @@ import {
     Award
 } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const values = [
     {

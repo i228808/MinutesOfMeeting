@@ -77,6 +77,7 @@ export default function MeetingDetailPage() {
     const [actionError, setActionError] = useState('');
     const [showContractModal, setShowContractModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [canEdit, setCanEdit] = useState(false);
     const [editForm, setEditForm] = useState<Partial<Meeting>>({});
 
     useEffect(() => {
@@ -104,6 +105,7 @@ export default function MeetingDetailPage() {
             if (res.ok) {
                 const data = await res.json();
                 setMeeting(data.meeting);
+                setCanEdit(data.can_edit === true);
             } else {
                 navigate('/dashboard/meetings');
             }
@@ -324,10 +326,12 @@ export default function MeetingDetailPage() {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {!isEditing ? (
                         <>
-                            <button onClick={() => setIsEditing(true)} className="btn btn-secondary" style={{ width: 'auto' }}>
-                                <FileSignature size={16} style={{ marginRight: '8px' }} />
-                                Edit Meeting
-                            </button>
+                            {canEdit && (
+                                <button onClick={() => setIsEditing(true)} className="btn btn-secondary" style={{ width: 'auto' }}>
+                                    <FileSignature size={16} style={{ marginRight: '8px' }} />
+                                    Edit Meeting
+                                </button>
+                            )}
                             {/* ... (Existing buttons) ... */}
                             {isCompleted && (
                                 <>

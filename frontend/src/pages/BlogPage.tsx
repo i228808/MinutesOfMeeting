@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, Calendar, ArrowRight } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const posts = [
     { title: 'Introducing AI-Powered Contract Generation', date: 'Jan 28, 2025', category: 'Product', excerpt: 'Transform meeting agreements into contracts instantly with our new AI-powered feature.' },

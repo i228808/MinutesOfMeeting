@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, Download, ArrowRight } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const pressReleases = [
     { title: 'Brevity Raises Series A to Revolutionize Meeting Productivity', date: 'Jan 15, 2025', source: 'TechCrunch' },

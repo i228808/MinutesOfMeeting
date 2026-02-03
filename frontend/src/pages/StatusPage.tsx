@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const services = [
     { name: 'API', status: 'operational', uptime: '99.99%' },

@@ -1,32 +1,61 @@
-import tiktoken
+import os
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# Constants
-ENC = tiktoken.get_encoding("cl100k_base")
+# Set tiktoken cache directory before importing
+CACHE_DIR = Path(__file__).parent / ".tiktoken_cache"
+CACHE_DIR.mkdir(exist_ok=True)
+os.environ["TIKTOKEN_CACHE_DIR"] = str(CACHE_DIR)
+
+# Try to load tiktoken, fall back to simple tokenizer if network fails
+ENC = None
+try:
+    import tiktoken
+    ENC = tiktoken.get_encoding("cl100k_base")
+    print("✓ Tiktoken encoding loaded successfully")
+except Exception as e:
+    print(f"⚠ Tiktoken failed to load ({e}), using fallback tokenizer")
 
 def get_token_count(text: str) -> int:
-    return len(ENC.encode(text))
+    if ENC:
+        return len(ENC.encode(text))
+    # Fallback: estimate ~4 chars per token (rough approximation)
+    return len(text) // 4
 
 def chunk_text_semantically(text: str, max_tokens: int = 512, overlap: int = 128) -> List[str]:
     """
     Fallback semantic chunking by token count.
     """
-    tokens = ENC.encode(text)
-    total_tokens = len(tokens)
-    
-    chunks = []
-    start = 0
-    while start < total_tokens:
-        end = min(start + max_tokens, total_tokens)
-        chunk_tokens = tokens[start:end]
-        chunk_text = ENC.decode(chunk_tokens)
-        chunks.append(chunk_text)
+    if ENC:
+        tokens = ENC.encode(text)
+        total_tokens = len(tokens)
         
-        if end == total_tokens:
-            break
-        start += (max_tokens - overlap)
-        
-    return chunks
+        chunks = []
+        start = 0
+        while start < total_tokens:
+            end = min(start + max_tokens, total_tokens)
+            chunk_tokens = tokens[start:end]
+            chunk_text = ENC.decode(chunk_tokens)
+            chunks.append(chunk_text)
+            
+            if end == total_tokens:
+                break
+            start += (max_tokens - overlap)
+            
+        return chunks
+    else:
+        # Fallback: chunk by character count (~4 chars per token)
+        max_chars = max_tokens * 4
+        overlap_chars = overlap * 4
+        chunks = []
+        start = 0
+        while start < len(text):
+            end = min(start + max_chars, len(text))
+            chunks.append(text[start:end])
+            if end == len(text):
+                break
+            start += (max_chars - overlap_chars)
+        return chunks
 
 def create_hierarchical_chunks(parsed_structure: List[Dict[str, Any]], filename: str) -> List[Dict[str, Any]]:
     final_chunks = []

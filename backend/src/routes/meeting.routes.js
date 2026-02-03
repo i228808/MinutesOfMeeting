@@ -346,4 +346,24 @@ router.post('/:id/export-sheets', meetingController.exportToSheets);
  */
 router.post('/:id/create-events', meetingController.createCalendarEvents);
 
+/**
+ * @swagger
+ * /api/meetings/{id}/retry-analysis:
+ *   post:
+ *     summary: Retry analysis for a failed or pending meeting
+ *     tags: [Meetings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Analysis retry started
+ */
+router.post('/:id/retry-analysis', meetingController.retryAnalysis);
+
 module.exports = router;

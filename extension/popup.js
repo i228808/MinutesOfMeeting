@@ -32,7 +32,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutBtn: document.getElementById('logout-btn'),
         timer: document.getElementById('timer'),
         activeTitle: document.getElementById('active-title-display'),
-        transcriptLog: document.getElementById('transcript-log')
+        transcriptLog: document.getElementById('transcript-log'),
+        teamSelect: document.getElementById('team-select')
     };
 
     const SERVER_URL = 'http://localhost:5000';
@@ -47,10 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMainView(userEmail);
         if (isRecording) {
             restoreRecordingState(activeTitle, savedStart);
-            connectSocket(token); // Reconnect if recording
+            connectSocket(token);
         } else {
             checkPermissions();
         }
+        fetchTeams(token);
     } else {
         showLoginView();
     }
@@ -81,6 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             showMainView(data.user.email);
             checkPermissions();
+            fetchTeams(data.token);
 
         } catch (err) {
             showInfo(loginInputs.error, err.message, 'error');
@@ -111,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         chrome.runtime.sendMessage({
             type: 'START_RECORDING',
-            data: { token, serverUrl: SERVER_URL, title }
+            data: { token, serverUrl: SERVER_URL, title, team_id: mainControls.teamSelect.value || null }
         }, (response) => {
             mainControls.startBtn.disabled = false;
             if (response && response.success) {
@@ -298,5 +301,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     function setStorage(obj) {
         return new Promise(r => chrome.storage.local.set(obj, r));
+    }
+
+    async function fetchTeams(authToken) {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/teams`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const data = await res.json();
+            if (res.ok && data.teams) {
+                mainControls.teamSelect.innerHTML = '<option value="">Personal Meeting</option>';
+                data.teams.forEach(team => {
+                    const opt = document.createElement('option');
+                    opt.value = team._id;
+                    opt.textContent = team.name;
+                    mainControls.teamSelect.appendChild(opt);
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch teams:', err);
+        }
     }
 });

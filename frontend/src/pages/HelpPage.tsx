@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, MessageCircle, FileQuestion, Mail, ChevronRight, Search } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const helpCategories = [
     { title: 'Getting Started', count: 12, icon: '🚀' },
@@ -88,7 +88,7 @@ export default function HelpPage() {
                 <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '16px' }}>Still need help?</h2>
                 <p style={{ fontSize: '16px', color: '#A1A1A6', marginBottom: '32px' }}>Our support team is available 24/7.</p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-                    <a href="mailto:support@getbrevity.com" style={{ padding: '14px 24px', background: '#FF6B4A', borderRadius: '10px', fontWeight: '600', fontSize: '15px', color: '#030303', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <a href="mailto:support@minutemaker.com" style={{ padding: '14px 24px', background: '#FF6B4A', borderRadius: '10px', fontWeight: '600', fontSize: '15px', color: '#030303', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                         <Mail size={18} /> Email Support
                     </a>
                     <button style={{ padding: '14px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', fontWeight: '600', fontSize: '15px', color: '#F5F5F7', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>

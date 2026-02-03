@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, MapPin, ArrowRight } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const openings = [
     {
@@ -75,7 +75,7 @@ export default function CareersPage() {
             <section style={{ padding: '80px 24px', background: '#0f0f12', textAlign: 'center' }}>
                 <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '16px' }}>Don't see a fit?</h2>
                 <p style={{ fontSize: '16px', color: '#A1A1A6', marginBottom: '24px' }}>Send us your resume and we'll keep you in mind.</p>
-                <a href="mailto:careers@getbrevity.com" style={{ padding: '14px 28px', background: '#FF6B4A', borderRadius: '10px', fontWeight: '600', fontSize: '15px', color: '#030303' }}>Get in touch</a>
+                <a href="mailto:careers@minutemaker.com" style={{ padding: '14px 28px', background: '#FF6B4A', borderRadius: '10px', fontWeight: '600', fontSize: '15px', color: '#030303' }}>Get in touch</a>
             </section>
 
             <footer style={{ padding: '40px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>

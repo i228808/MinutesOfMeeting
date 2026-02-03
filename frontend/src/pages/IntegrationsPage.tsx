@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, Calendar, Slack, Video, Database, ArrowRight } from 'lucide-react';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 const integrations = [
     { name: 'Google Calendar', desc: 'Sync action items and deadlines automatically.', icon: Calendar, color: '#4285F4', status: 'Available' },

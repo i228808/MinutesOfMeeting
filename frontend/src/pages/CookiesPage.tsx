@@ -1,6 +1,6 @@
 import StaticPageLayout, { legalStyles } from '../layouts/StaticPageLayout';
 
-const BRAND = 'Brevity';
+const BRAND = 'Minute Maker';
 
 export default function CookiesPage() {
     return (
@@ -70,7 +70,7 @@ export default function CookiesPage() {
             <div style={legalStyles.section}>
                 <h2 style={legalStyles.heading}>Contact Us</h2>
                 <p style={legalStyles.paragraph}>
-                    If you have questions about our use of cookies, please contact us at privacy@getbrevity.com.
+                    If you have questions about our use of cookies, please contact us at privacy@minutemaker.com.
                 </p>
             </div>
         </StaticPageLayout>
