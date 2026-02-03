@@ -5,7 +5,6 @@ import {
     FileAudio,
     FileText as FileTextIcon,
     X,
-    Loader2,
     CheckCircle,
     AlertCircle,
     Sparkles,

@@ -12,8 +12,7 @@ import {
     History,
     CheckCircle,
     Loader2,
-    Clock,
-    Edit3
+    Clock
 } from 'lucide-react';
 
 interface Contract {
@@ -142,7 +141,7 @@ export default function ContractEditorPage() {
                     }
                 }
             },
-            cancel: { label: 'Cancel' }
+            cancel: { label: 'Cancel', onClick: () => { } }
         });
     };
 
@@ -171,7 +170,7 @@ export default function ContractEditorPage() {
                     }
                 }
             },
-            cancel: { label: 'Cancel' }
+            cancel: { label: 'Cancel', onClick: () => { } }
         });
     };
     const handlePrint = useReactToPrint({

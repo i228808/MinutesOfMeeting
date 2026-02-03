@@ -49,9 +49,9 @@ describe("LoginForm", () => {
 
 describe("SmokeyBackground", () => {
   test("renders even when WebGL is not supported", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = vi.spyOn(console, "error").mockImplementation(() => { });
     const oldGetContext = HTMLCanvasElement.prototype.getContext;
-    // @ts-expect-error test stub
+    // Stub getContext
     HTMLCanvasElement.prototype.getContext = () => null;
 
     render(<SmokeyBackground />);
@@ -109,7 +109,7 @@ describe("SmokeyBackground", () => {
     const { unmount } = render(<SmokeyBackground />);
     // trigger mouse move to cover handler
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
-    canvas.getBoundingClientRect = () => ({ left: 10, top: 20, right: 0, bottom: 0, width: 100, height: 100, x: 10, y: 20, toJSON: () => {} });
+    canvas.getBoundingClientRect = () => ({ left: 10, top: 20, right: 0, bottom: 0, width: 100, height: 100, x: 10, y: 20, toJSON: () => { } });
     canvas.dispatchEvent(new MouseEvent("mousemove", { clientX: 15, clientY: 25 }));
     // unmount triggers cleanup removing listeners + cancelAnimationFrame
     unmount();
@@ -121,7 +121,7 @@ describe("SmokeyBackground", () => {
   });
 
   test("handles shader compilation errors", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = vi.spyOn(console, "error").mockImplementation(() => { });
     const oldGetContext = HTMLCanvasElement.prototype.getContext;
 
     const gl = {
@@ -147,7 +147,7 @@ describe("SmokeyBackground", () => {
   });
 
   test("handles program link errors", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = vi.spyOn(console, "error").mockImplementation(() => { });
     const oldGetContext = HTMLCanvasElement.prototype.getContext;
 
     const gl = {

@@ -9,9 +9,7 @@ import {
     ExternalLink,
     Trash2,
     Sheet,
-    Clock,
-    Calendar, // Keeping import if needed or remove if unused, will keep for safety
-    CheckCircle // Keeping for safety
+    Clock
 } from 'lucide-react';
 import GlassModal from '../components/GlassModal';
 

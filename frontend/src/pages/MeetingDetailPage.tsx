@@ -181,6 +181,40 @@ export default function MeetingDetailPage() {
         }
     };
 
+    const handleSave = async () => {
+        setActionLoading('save');
+        setActionError('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/meetings/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(editForm)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setMeeting(data.meeting);
+                setIsEditing(false);
+                toast.success('Meeting updated successfully!');
+                // Also sync calendar events if deadlines changed
+                if (editForm.processed_deadlines) {
+                    await handleCreateEvents();
+                }
+            } else {
+                setActionError(data.error || 'Failed to save changes');
+            }
+        } catch (error) {
+            setActionError('Failed to save changes');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const handleDraftContract = async () => {
         if (!meeting) return;
         setActionLoading('contract');
@@ -221,39 +255,7 @@ export default function MeetingDetailPage() {
         }
     };
 
-    const handleSave = async () => {
-        setActionLoading('save');
-        setActionError('');
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/meetings/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(editForm)
-            });
 
-            const data = await res.json();
-
-            if (res.ok) {
-                setMeeting(data.meeting);
-                setIsEditing(false);
-                toast.success('Meeting updated successfully!');
-                // Also sync calendar events if deadlines changed
-                if (editForm.processed_deadlines) {
-                    await handleCreateEvents();
-                }
-            } else {
-                setActionError(data.error || 'Failed to save changes');
-            }
-        } catch (error) {
-            setActionError('Failed to save changes');
-        } finally {
-            setActionLoading(null);
-        }
-    };
 
     const regions = [
         'Pakistan', 'United States', 'United Kingdom', 'European Union', 'India',
@@ -265,8 +267,6 @@ export default function MeetingDetailPage() {
     // Restore selectedRegion state (was also deleted)
     const [selectedRegion, setSelectedRegion] = useState('Pakistan');
 
-
-
     const formatDeadlineDate = (dateStr: string) => {
         if (!dateStr) return 'Not specified';
         const date = new Date(dateStr);
@@ -277,6 +277,10 @@ export default function MeetingDetailPage() {
             day: 'numeric'
         });
     };
+
+
+
+
 
     const getPriorityBadge = (priority: string) => {
         switch (priority?.toUpperCase()) {

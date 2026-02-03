@@ -1,6 +1,6 @@
-import { describe, expect, test, vi, beforeEach } from "vitest";
+import { describe, test, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 
 import AuthPage from "./AuthPage";
 import MeetingsPage from "./MeetingsPage";
