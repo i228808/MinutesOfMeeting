@@ -108,11 +108,13 @@ const processTranscript = asyncHandler(async (req, res) => {
 
     try {
         // Step 1: Transcribe audio if present and no transcript
+        // Note: For very large files, transcription should also be moved to a worker.
+        // For now, we assume transcription is fast enough or handled by the external service quickly.
         if (meeting.audio_file_path && !meeting.raw_transcript) {
             meeting.status = 'TRANSCRIBING';
             await meeting.save();
 
-            const transcriptionResult = await audioService.transcribeAudio(meeting.audio_file_path);
+            const transcriptionResult = await audioService.transcribeAudio(meeting.audio_file_path, 'en');
             meeting.raw_transcript = transcriptionResult.text;
             meeting.audio_duration_minutes = transcriptionResult.duration / 60;
 
@@ -127,127 +129,25 @@ const processTranscript = asyncHandler(async (req, res) => {
             return res.status(400).json({ error: 'No transcript to process' });
         }
 
-        // Step 1.5: Get Team Members Context if Team Meeting
-        let teamMembers = [];
-        if (meeting.team_id) {
-            const Team = require('../models/Team');
-            const team = await Team.findById(meeting.team_id).populate('members', 'name email _id');
-            if (team && team.members) {
-                teamMembers = team.members.map(m => ({
-                    name: m.name,
-                    id: m._id.toString(),
-                    email: m.email
-                }));
-            }
-        }
+        // Step 2: Offload Analysis to Background Queue
+        const { meetingQueue } = require('../config/queue');
 
-        // Step 2: Analyze with LLM (Pass team members for context)
+        await meetingQueue.add('analyze', {
+            meetingId: meeting._id,
+            transcript: meeting.raw_transcript
+        });
+
+        // Update status immediately
         meeting.status = 'PROCESSING';
         await meeting.save();
 
-        const analysis = await llmService.analyzeTranscript(meeting.raw_transcript, teamMembers);
-
-        // Update meeting with analysis results
-        meeting.summary = analysis.summary || '';
-        meeting.processed_actors = analysis.actors || [];
-        meeting.processed_roles = analysis.roles || [];
-        meeting.processed_responsibilities = analysis.responsibilities || [];
-        meeting.processed_deadlines = analysis.deadlines || [];
-        meeting.key_decisions = analysis.key_decisions || [];
-        meeting.status = 'COMPLETED';
-        meeting.error_message = null;
-
-        await meeting.save();
-
-        // Auto-create calendar events & reminders from deadlines
-        if (meeting.processed_deadlines?.length > 0) {
-            const Reminder = require('../models/Reminder');
-            try {
-                for (const deadline of meeting.processed_deadlines) {
-                    if (!deadline.deadline) continue;
-
-                    // Determine Target User (intelligent matching)
-                    let targetUserId = req.user._id; // Default to uploader if no match
-                    let targetUserName = 'You';
-
-                    if (meeting.team_id && deadline.actor && teamMembers.length > 0) {
-                        // Fuzzy match actor name to team member
-                        const normalizedActor = deadline.actor.toLowerCase();
-                        const matchedMember = teamMembers.find(m =>
-                            m.name.toLowerCase().includes(normalizedActor) ||
-                            normalizedActor.includes(m.name.toLowerCase())
-                        );
-
-                        if (matchedMember) {
-                            targetUserId = matchedMember.id;
-                            targetUserName = matchedMember.name;
-                        }
-                    }
-
-                    // Check if already exists for THAT user
-                    const existing = await CalendarEvent.findOne({
-                        user_id: targetUserId,
-                        meeting_id: meeting._id,
-                        title: deadline.task
-                    });
-
-                    if (!existing) {
-                        const deadlineDate = new Date(deadline.deadline);
-                        if (isNaN(deadlineDate.getTime())) continue;
-
-                        // Create Calendar Event
-                        await CalendarEvent.create({
-                            user_id: targetUserId,
-                            meeting_id: meeting._id,
-                            title: deadline.task,
-                            description: `Action Item from: ${meeting.title}\nAssigned to: ${deadline.actor}`,
-                            start_time: deadlineDate,
-                            end_time: new Date(deadlineDate.getTime() + 60 * 60 * 1000),
-                            all_day: true,
-                            type: 'deadline',
-                            color: '#f59e0b'
-                        });
-
-                        // Create Reminder (1 day before)
-                        const reminderDate = new Date(deadlineDate.getTime() - 24 * 60 * 60 * 1000);
-                        if (reminderDate > new Date()) {
-                            await Reminder.create({
-                                user_id: targetUserId,
-                                meeting_id: meeting._id,
-                                task: deadline.task,
-                                message: `Reminder: "${deadline.task}" is due tomorrow. (From Team Meeting: ${meeting.title})`,
-                                remind_at: reminderDate,
-                                reminder_type: 'EMAIL',
-                                status: 'PENDING'
-                            });
-                        }
-                    }
-                }
-                console.log(`Processed ${meeting.processed_deadlines.length} deadlines with intelligent assignment`);
-            } catch (calError) {
-                console.error('Failed to create calendar events/reminders:', calError);
-            }
-        }
-
-        // Send notification
-        try {
-            await notificationService.sendMeetingProcessedEmail(req.user, meeting);
-        } catch (notifError) {
-            console.error('Failed to send notification:', notifError);
-        }
-
-        res.json({
+        res.status(202).json({
             success: true,
+            message: 'Meeting processing started in background',
             meeting: {
                 id: meeting._id,
                 title: meeting.title,
-                status: meeting.status,
-                summary: meeting.summary,
-                actors: meeting.processed_actors,
-                roles: meeting.processed_roles,
-                responsibilities: meeting.processed_responsibilities,
-                deadlines: meeting.processed_deadlines,
-                key_decisions: meeting.key_decisions
+                status: 'PROCESSING'
             }
         });
 
@@ -542,7 +442,7 @@ const analyzeOnly = asyncHandler(async (req, res) => {
     if (req.file) {
         try {
             console.log('Transcribing audio file:', req.file.path);
-            const transcriptionResult = await audioService.transcribeAudio(req.file.path);
+            const transcriptionResult = await audioService.transcribeAudio(req.file.path, 'en');
             rawTranscript = transcriptionResult.text;
             console.log('Transcription complete, length:', rawTranscript.length);
 

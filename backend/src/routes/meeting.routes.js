@@ -92,7 +92,9 @@ router.use(authenticate);
  *                     status:
  *                       type: string
  */
-router.post('/upload', upload.single('audio'), meetingController.uploadTranscript);
+const { validateAudioFile } = require('../middleware/fileValidation');
+
+router.post('/upload', upload.single('audio'), validateAudioFile, meetingController.uploadTranscript);
 
 /**
  * @swagger
@@ -136,7 +138,7 @@ router.post('/upload', upload.single('audio'), meetingController.uploadTranscrip
  *                       items:
  *                         type: object
  */
-router.post('/analyze', upload.single('audio'), meetingController.analyzeOnly);
+router.post('/analyze', upload.single('audio'), validateAudioFile, meetingController.analyzeOnly);
 
 /**
  * @swagger

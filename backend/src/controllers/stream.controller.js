@@ -5,8 +5,11 @@ const { audioService, llmService, LimitService } = require('../services');
 const { generateSessionId } = require('../utils/helpers');
 const { getIO } = require('../config/socket');
 
-// Store active stream processors by session
-const activeProcessors = new Map();
+const redis = require('../config/redis');
+
+// Constants
+const SESSION_TTL = 3600; // 1 hour expiration for sessions
+const CHUNK_THRESHOLD = 5; // Process after 5 chunks (~500KB - 1MB depending on chunk size)
 
 /**
  * Start a new streaming session
@@ -26,7 +29,7 @@ const startSession = asyncHandler(async (req, res) => {
 
     const sessionId = generateSessionId();
 
-    // Create log entry
+    // Create log entry (Persistent DB)
     const streamLog = await ExtensionStreamLog.create({
         user_id: req.user._id,
         session_id: sessionId,
@@ -36,15 +39,19 @@ const startSession = asyncHandler(async (req, res) => {
         started_at: new Date()
     });
 
-    // Initialize stream processor
-    const processor = audioService.createStreamProcessor();
-    activeProcessors.set(sessionId, {
-        processor,
+    // Initialize session in Redis
+    const sessionData = {
         userId: req.user._id.toString(),
-        logId: streamLog._id,
+        logId: streamLog._id.toString(),
+        teamId: team_id || '',
         partialTranscript: '',
-        teamId: team_id || null
-    });
+        startTime: Date.now()
+    };
+
+    await redis.set(`session:${sessionId}:meta`, JSON.stringify(sessionData), 'EX', SESSION_TTL);
+
+    // Clear any existing list (rare collision case)
+    await redis.del(`session:${sessionId}:buffer`);
 
     res.json({
         success: true,
@@ -59,51 +66,95 @@ const startSession = asyncHandler(async (req, res) => {
 const processChunk = asyncHandler(async (req, res) => {
     const { session_id } = req.body;
 
-    if (!session_id || !activeProcessors.has(session_id)) {
+    if (!session_id) {
+        return res.status(400).json({ error: 'Session ID required' });
+    }
+
+    // Get session metadata from Redis
+    const sessionMetaRaw = await redis.get(`session:${session_id}:meta`);
+
+    if (!sessionMetaRaw) {
         return res.status(400).json({ error: 'Invalid or expired session' });
     }
 
-    if (!req.file) {
-        return res.status(400).json({ error: 'No audio chunk provided' });
-    }
-
-    const session = activeProcessors.get(session_id);
+    const session = JSON.parse(sessionMetaRaw);
 
     // Verify user owns this session
     if (session.userId !== req.user._id.toString()) {
         return res.status(403).json({ error: 'Session access denied' });
     }
 
+    if (!req.file) {
+        return res.status(400).json({ error: 'No audio chunk provided' });
+    }
+
     try {
-        // Add chunk to processor
-        const shouldProcess = session.processor.addChunk(req.file.buffer);
+        // 1. Store the first chunk (WebM Header) separately if not set
+        const headerKey = `session:${session_id}:header`;
+        const hasHeader = await redis.exists(headerKey);
+
+        if (!hasHeader) {
+            // First chunk is assumed to be the header
+            await redis.set(headerKey, req.file.buffer.toString('base64'), 'EX', SESSION_TTL);
+        }
+
+        // 2. Push chunk to Redis List (Buffer)
+        // Store as base64 to ensure safe serialization
+        await redis.rpush(`session:${session_id}:buffer`, req.file.buffer.toString('base64'));
+        await redis.expire(`session:${session_id}:buffer`, SESSION_TTL);
+
+        // 3. Check buffer size
+        const bufferLen = await redis.llen(`session:${session_id}:buffer`);
 
         let transcription = null;
+        let processed = false;
 
-        if (shouldProcess) {
-            // Process accumulated chunks
-            const result = await session.processor.process();
+        if (bufferLen >= CHUNK_THRESHOLD) {
+            processed = true;
 
-            if (result && result.text) {
-                transcription = result.text;
-                session.partialTranscript += ' ' + result.text;
+            // Get all chunks
+            const chunkStrings = await redis.lrange(`session:${session_id}:buffer`, 0, -1);
 
-                // Update log
-                await ExtensionStreamLog.findByIdAndUpdate(session.logId, {
-                    partial_transcript: session.partialTranscript,
-                    audio_chunks_received: (await ExtensionStreamLog.findById(session.logId)).audio_chunks_received + 1
-                });
+            // Get header
+            const headerString = await redis.get(headerKey);
 
-                // Emit to client via Socket.IO
-                try {
-                    const io = getIO();
-                    io.to(`user:${session.userId}`).emit('transcription', {
-                        session_id,
-                        text: result.text,
-                        is_partial: true
+            if (chunkStrings.length > 0 && headerString) {
+                // Clear buffer *before* processing to allow new chunks to accumulate
+                await redis.del(`session:${session_id}:buffer`);
+
+                // Reconstruct Buffer
+                // Prepend header every time for ffmpeg (stateless processing trick)
+                const headerBuf = Buffer.from(headerString, 'base64');
+                const chunkBufs = chunkStrings.map(s => Buffer.from(s, 'base64'));
+                const combinedBuffer = Buffer.concat([headerBuf, ...chunkBufs]);
+
+                // Transcribe
+                const result = await audioService.transcribeBuffer(combinedBuffer, 'webm', 'en');
+
+                if (result && result.text) {
+                    transcription = result.text;
+
+                    // Update partial transcript in Redis
+                    session.partialTranscript += ' ' + result.text;
+                    await redis.set(`session:${session_id}:meta`, JSON.stringify(session), 'EX', SESSION_TTL);
+
+                    // Update Mongo Log (async, fire and forget-ish but safe enough)
+                    await ExtensionStreamLog.findByIdAndUpdate(session.logId, {
+                        partial_transcript: session.partialTranscript,
+                        $inc: { audio_chunks_received: bufferLen }
                     });
-                } catch (e) {
-                    // Socket not available, continue anyway
+
+                    // Emit to client
+                    try {
+                        const io = getIO();
+                        io.to(`user:${session.userId}`).emit('transcription', {
+                            session_id,
+                            text: result.text,
+                            is_partial: true
+                        });
+                    } catch (e) {
+                        // socket error ignored
+                    }
                 }
             }
         }
@@ -111,7 +162,7 @@ const processChunk = asyncHandler(async (req, res) => {
         res.json({
             success: true,
             transcription,
-            processed: shouldProcess
+            processed
         });
     } catch (error) {
         console.error('Chunk processing error:', error);
@@ -125,27 +176,44 @@ const processChunk = asyncHandler(async (req, res) => {
 const endSession = asyncHandler(async (req, res) => {
     const { session_id, title } = req.body;
 
-    if (!session_id || !activeProcessors.has(session_id)) {
-        return res.status(400).json({ error: 'Invalid or expired session' });
-    }
+    if (!session_id) return res.status(400).json({ error: 'Session ID required' });
 
-    const session = activeProcessors.get(session_id);
+    const sessionMetaRaw = await redis.get(`session:${session_id}:meta`);
+    if (!sessionMetaRaw) return res.status(400).json({ error: 'Invalid or expired session' });
 
-    // Verify user owns this session
+    const session = JSON.parse(sessionMetaRaw);
+
     if (session.userId !== req.user._id.toString()) {
         return res.status(403).json({ error: 'Session access denied' });
     }
 
     try {
-        // Flush any remaining audio
-        const finalResult = await session.processor.flush();
-        if (finalResult && finalResult.text) {
-            session.partialTranscript += ' ' + finalResult.text;
+        // Flush remaining chunks
+        const chunkStrings = await redis.lrange(`session:${session_id}:buffer`, 0, -1);
+        const headerString = await redis.get(`session:${session_id}:header`);
+
+        let finalSegment = '';
+
+        if (chunkStrings.length > 0 && headerString) {
+            const headerBuf = Buffer.from(headerString, 'base64');
+            const chunkBufs = chunkStrings.map(s => Buffer.from(s, 'base64'));
+            const combinedBuffer = Buffer.concat([headerBuf, ...chunkBufs]);
+
+            const result = await audioService.transcribeBuffer(combinedBuffer, 'webm');
+            if (result && result.text) {
+                finalSegment = result.text;
+                session.partialTranscript += ' ' + finalSegment;
+            }
         }
 
         const finalTranscript = session.partialTranscript.trim();
 
-        // Update stream log
+        // Cleanup Redis
+        await redis.del(`session:${session_id}:meta`);
+        await redis.del(`session:${session_id}:buffer`);
+        await redis.del(`session:${session_id}:header`);
+
+        // Finalize DB Record
         const streamLog = await ExtensionStreamLog.findByIdAndUpdate(
             session.logId,
             {
@@ -156,102 +224,63 @@ const endSession = asyncHandler(async (req, res) => {
             { new: true }
         );
 
-        // Calculate duration
-        const durationSeconds = Math.round(
-            (new Date() - new Date(streamLog.started_at)) / 1000
-        );
+        const durationSeconds = Math.round((new Date() - new Date(streamLog.started_at)) / 1000);
         const durationMinutes = durationSeconds / 60;
 
         streamLog.duration_seconds = durationSeconds;
         await streamLog.save();
 
-        // Update audio usage
+        // Usage limit update
         await LimitService.incrementUsage(req.user._id, 'audio', durationMinutes);
 
-        // Create a meeting transcript from the stream
-        let meeting = null;
-        // Always create a meeting record, even if transcript is empty/error
-        // so the user sees a result in their dashboard.
-        const effectiveTranscript = finalTranscript || '[No speech detected or recording error]';
+        // Create Meeting
+        const effectiveTranscript = finalTranscript || '[No speech detected]';
 
-        if (true) { // Always enter
-            meeting = await MeetingTranscript.create({
-                user_id: req.user._id,
-                team_id: session.teamId || null,
-                title: title || `Live Meeting - ${new Date().toLocaleDateString()}`,
-                raw_transcript: effectiveTranscript,
-                audio_duration_minutes: durationMinutes,
-                status: 'UPLOADED'
-            });
+        const meeting = await MeetingTranscript.create({
+            user_id: req.user._id,
+            team_id: session.teamId || null,
+            title: title || `Live Meeting - ${new Date().toLocaleDateString()}`,
+            raw_transcript: effectiveTranscript,
+            audio_duration_minutes: durationMinutes,
+            status: 'UPLOADED' // Set to UPLOADED first
+        });
 
-            streamLog.meeting_transcript_id = meeting._id;
-            await streamLog.save();
+        // Trigger Analysis (Async background)
+        // Note: In production, substitute this with BullMQ (as per audit)
+        // For now, we keep the async IIFE but acknowledge the risk or implement BullMQ in next step
+        (async () => {
+            try {
+                meeting.status = 'PROCESSING';
+                await meeting.save();
 
-            // Increment upload usage
-            await LimitService.incrementUsage(req.user._id, 'upload');
+                const analysis = await llmService.analyzeTranscript(effectiveTranscript);
 
-            // --- TRIGGER ASYNC ANALYSIS ---
-            // We do this asynchronously so we don't block the end session response
-            (async () => {
-                try {
-                    console.log(`Starting post-stream analysis for meeting ${meeting._id}`);
-                    meeting.status = 'PROCESSING';
-                    await meeting.save();
-
-                    const analysis = await llmService.analyzeTranscript(effectiveTranscript);
-
-                    // Update meeting with analysis results
-                    meeting.summary = analysis.summary || '';
-                    meeting.processed_actors = analysis.actors || [];
-                    meeting.processed_roles = analysis.roles || [];
-                    meeting.processed_responsibilities = analysis.responsibilities || [];
-                    meeting.processed_deadlines = analysis.deadlines || [];
-                    meeting.key_decisions = analysis.key_decisions || [];
-                    meeting.status = 'COMPLETED';
-                    await meeting.save();
-
-                    console.log(`Analysis complete for meeting ${meeting._id}`);
-                } catch (analysisErr) {
-                    console.error(`Analysis failed for meeting ${meeting._id}:`, analysisErr);
-                    // Use PENDING_ANALYSIS so user can retry - transcript is preserved
-                    meeting.status = 'PENDING_ANALYSIS';
-                    meeting.error_message = `Analysis failed: ${analysisErr.message}. You can retry from the meeting details page.`;
-                    await meeting.save();
-                    console.log(`Meeting ${meeting._id} saved with PENDING_ANALYSIS status - transcript preserved for retry`);
-                }
-            })();
-        }
-
-        // Cleanup
-        session.processor.clear();
-        activeProcessors.delete(session_id);
-
-        // Emit completion event
-        try {
-            const io = getIO();
-            io.to(`user:${session.userId}`).emit('stream_ended', {
-                session_id,
-                duration_seconds: durationSeconds,
-                meeting_id: meeting?._id
-            });
-        } catch (e) {
-            // Socket not available
-        }
+                meeting.summary = analysis.summary || '';
+                meeting.processed_actors = analysis.actors || [];
+                meeting.processed_roles = analysis.roles || [];
+                meeting.processed_responsibilities = analysis.responsibilities || [];
+                meeting.processed_deadlines = analysis.deadlines || [];
+                meeting.key_decisions = analysis.key_decisions || [];
+                meeting.status = 'COMPLETED';
+                await meeting.save();
+            } catch (e) {
+                console.error('Analysis failed', e);
+                meeting.status = 'FAILED';
+                meeting.error_message = e.message;
+                await meeting.save();
+            }
+        })();
 
         res.json({
             success: true,
             session_id,
             duration_seconds: durationSeconds,
-            transcript_length: finalTranscript.length,
-            meeting_id: meeting?._id,
-            message: 'Streaming session ended successfully. Analysis started.'
+            meeting_id: meeting._id,
+            message: 'Session ended'
         });
+
     } catch (error) {
         console.error('End session error:', error);
-
-        // Cleanup on error
-        activeProcessors.delete(session_id);
-
         throw error;
     }
 });
@@ -262,25 +291,25 @@ const endSession = asyncHandler(async (req, res) => {
 const getSessionStatus = asyncHandler(async (req, res) => {
     const { session_id } = req.params;
 
+    // Check Redis for active status
+    const isActive = await redis.exists(`session:${session_id}:meta`);
+
+    // Check DB for historical status
     const streamLog = await ExtensionStreamLog.findOne({
         session_id,
         user_id: req.user._id
     });
 
-    if (!streamLog) {
+    if (!streamLog && !isActive) {
         return res.status(404).json({ error: 'Session not found' });
     }
 
-    const isActive = activeProcessors.has(session_id);
-
     res.json({
         session_id,
-        status: streamLog.transcription_status,
-        is_active: isActive,
-        duration_seconds: streamLog.duration_seconds,
-        chunks_received: streamLog.audio_chunks_received,
-        started_at: streamLog.started_at,
-        ended_at: streamLog.ended_at
+        status: isActive ? 'STREAMING' : (streamLog ? streamLog.transcription_status : 'UNKNOWN'),
+        is_active: !!isActive,
+        duration_seconds: streamLog ? streamLog.duration_seconds : 0,
+        started_at: streamLog ? streamLog.started_at : null
     });
 });
 

@@ -25,11 +25,17 @@ const { errorHandler } = require('./middleware/error.middleware');
 // Import passport config
 require('./config/passport');
 
+// Initialize workers
+require('./workers/meeting.worker');
+
+// Initialize Cron Jobs
+require('./cron/cleanup')();
+
 const app = express();
 
 // Security middleware
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "same-site" }
 }));
 
 // CORS configuration
@@ -39,6 +45,10 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Rate limiting
+const { apiLimiter } = require('./middleware/rateLimiter');
+app.use('/api', apiLimiter);
 
 // Stripe webhook (raw body needed) - Must be before express.json()
 app.post('/api/webhook/stripe',
@@ -52,13 +62,25 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // Session middleware (for OAuth)
+// Session middleware (for OAuth)
+if (!process.env.SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET is not defined.');
+    process.exit(1);
+}
+
+const mongoSanitize = require('express-mongo-sanitize');
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: 'strict', // Protect against CSRF
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));

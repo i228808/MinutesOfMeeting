@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Footer from '../components/Footer';
 
 const BRAND = 'Minute Maker';
@@ -23,13 +23,7 @@ export default function StaticPageLayout({ title, subtitle, children, lastUpdate
                 <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
                         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
                             <span style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.02em' }}>{BRAND}</span>
                         </Link>
                         <div style={{ display: 'flex', gap: '28px' }}>

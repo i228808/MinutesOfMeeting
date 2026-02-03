@@ -39,7 +39,10 @@ class AudioService {
             console.log('  - Form headers:', form.getHeaders());
 
             // Call the Flask STT endpoint using axios
-            const response = await axios.post(`${this.sttServiceUrl}/transcribe`, form, {
+            // Append language query param if provided
+            const url = `${this.sttServiceUrl}/transcribe${language ? `?language=${language}` : ''}`;
+
+            const response = await axios.post(url, form, {
                 headers: {
                     ...form.getHeaders()
                 },
@@ -79,7 +82,7 @@ class AudioService {
      * @param {string} format - Audio format (webm, mp3, wav, etc.)
      * @returns {Promise<{text: string, language: string}>}
      */
-    async transcribeBuffer(audioBuffer, format = 'webm') {
+    async transcribeBuffer(audioBuffer, format = 'webm', language = null) {
         try {
             // Create a temporary file from buffer
             const tempDir = path.join(__dirname, '../../uploads/temp');
@@ -90,7 +93,7 @@ class AudioService {
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.${format}`);
             fs.writeFileSync(tempFilePath, audioBuffer);
 
-            const result = await this.transcribeAudio(tempFilePath);
+            const result = await this.transcribeAudio(tempFilePath, language);
 
             // Clean up temp file
             if (fs.existsSync(tempFilePath)) {

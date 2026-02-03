@@ -8,7 +8,6 @@ import {
     Check,
     Play,
     ChevronRight,
-    Sparkles,
     Brain,
     FileSignature,
     Star,
@@ -248,14 +247,7 @@ export default function LandingPage() {
                 <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
                         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 0 20px rgba(255, 107, 74, 0.3)'
-                            }}>
-                                <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.svg" alt="Minute Maker" style={{ width: '40px', height: '40px' }} />
                             <span style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.02em' }}>{BRAND}</span>
                         </Link>
                         <div style={{ display: 'flex', gap: '28px' }}>

@@ -1,5 +1,6 @@
 const passport = require('passport');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const { generateToken } = require('../utils/jwt');
@@ -30,7 +31,7 @@ const register = asyncHandler(async (req, res) => {
     }
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Create new user (unverified)
@@ -140,7 +141,7 @@ const resendOTP = asyncHandler(async (req, res) => {
     }
 
     // Generate new OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     user.verification_otp = otp;

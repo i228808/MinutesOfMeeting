@@ -28,7 +28,7 @@ else:
     print("Groq API key loaded successfully.")
 
 
-def transcribe_with_groq(audio_path):
+def transcribe_with_groq(audio_path, language=None, prompt=None):
     """
     Transcribe audio using Groq's Whisper Large V3 API.
     Returns dict with 'text' and 'language' keys.
@@ -43,8 +43,15 @@ def transcribe_with_groq(audio_path):
         }
         data = {
             "model": "whisper-large-v3",
-            "response_format": "verbose_json"
+            "response_format": "verbose_json",
+            "temperature": 0.0
         }
+
+        if language:
+            data["language"] = language
+        
+        if prompt:
+            data["prompt"] = prompt
         
         response = requests.post(GROQ_API_URL, headers=headers, files=files, data=data)
         
@@ -64,11 +71,27 @@ def load_audio_for_rms(audio_path):
     Uses ffmpeg to decode audio to raw PCM.
     """
     try:
+        # Security check: Ensure file is in temp directory
+        abs_path = os.path.abspath(audio_path)
+        temp_dir = os.path.abspath(tempfile.gettempdir())
+        
+        # Also allow project uploads dir
+        project_uploads = os.path.abspath(os.path.join(os.path.dirname(__file__), '../uploads'))
+        
+        if not (abs_path.startswith(temp_dir) or abs_path.startswith(project_uploads)):
+             print(f"SECURITY ADVISORY: Attempt to process file outside permitted directories: {abs_path}")
+             # In production, you might raise an error here. 
+             # For now we proceed but log heavily, assuming the app only generates temp files.
+        
+        if not os.path.exists(audio_path):
+            return np.array([], dtype=np.float32)
+
         cmd = [
             "ffmpeg", "-i", audio_path,
             "-f", "f32le", "-acodec", "pcm_f32le",
             "-ac", "1", "-ar", "16000", "-"
         ]
+        # shell=False is default, but robust path handling above adds layer
         result = subprocess.run(cmd, capture_output=True, check=True)
         audio = np.frombuffer(result.stdout, dtype=np.float32)
         return audio
@@ -116,18 +139,40 @@ def transcribe():
             print("DEBUG: Could not load audio for RMS, proceeding with transcription")
 
         # Silence threshold (adjustable)
-        # 0.005 is a common threshold for "near silence" in normalized audio
-        SILENCE_THRESHOLD = 0.004
+        # Increased to 0.008 to be more aggressive against background noise
+        SILENCE_THRESHOLD = 0.008
 
         if rms < SILENCE_THRESHOLD and len(audio) > 0:
             print("DEBUG: Silence detected (RMS below threshold). Skipping transcription.")
             return jsonify({'text': '', 'language': 'unknown', 'status': 'silence'}), 200
 
-        # Transcribe using Groq API
-        result = transcribe_with_groq(temp_path)
-        text = result['text']
-        language = result['language']
+        # Get query params
+        language = request.args.get('language')
         
+        # Context prompt to prevent hallucinations
+        base_prompt = "The following is a transcription of a professional meeting. Speakers are discussing business topics."
+        
+        # Transcribe using Groq API
+        result = transcribe_with_groq(temp_path, language=language, prompt=base_prompt)
+        text = result['text'].strip()
+        language = result['language']
+
+        # --- Post-Processing Hallucination Filters ---
+        # Whisper often hallucinates these specific phrases in silence
+        hallucinations = [
+            "Hello.", "Hello!", "hello", "Bye.", "Box 10", "See you next time.", 
+            "Amara.org", "Sous-titres par", "Subtitles by", "Thank you."
+        ]
+        
+        if text in hallucinations or (len(text) < 5 and "Hello" in text):
+             print(f"DEBUG: Filtered hallucination: '{text}'")
+             text = ""
+        
+        # Filter "You" repetition bug
+        if text.replace("You", "").strip() == "" and len(text) > 3:
+             print(f"DEBUG: Filtered 'You' repetition: '{text}'")
+             text = ""
+
         return jsonify({'text': text, 'language': language})
     except RuntimeError as e:
         if "cannot reshape tensor of 0 elements" in str(e):

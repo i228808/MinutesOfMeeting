@@ -3,14 +3,11 @@ const User = require('../models/User');
 const MeetingTranscript = require('../models/MeetingTranscript');
 const { asyncHandler } = require('../middleware/error.middleware');
 
+const crypto = require('crypto');
+
 // Helper to generate 9-char random alphanumeric string
 const generateInviteCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 9; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+    return crypto.randomBytes(5).toString('hex').toUpperCase().substring(0, 9);
 };
 
 /**

@@ -11,7 +11,6 @@ import {
     Upload,
     Mic,
     CreditCard,
-    Sparkles,
     Users
 } from 'lucide-react';
 
@@ -60,18 +59,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {/* Logo */}
                 <div style={{ padding: '0 24px 32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
-                            background: 'linear-gradient(135deg, var(--color-primary) 0%, #FF9A7A 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 12px rgba(255, 107, 74, 0.25)'
-                        }}>
-                            <Sparkles size={22} color="#030303" strokeWidth={2.5} />
-                        </div>
+                        <img src="/logo.svg" alt="Minute Maker" style={{ width: '40px', height: '40px' }} />
                         <div>
                             <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', lineHeight: 1 }}>
                                 {BRAND}

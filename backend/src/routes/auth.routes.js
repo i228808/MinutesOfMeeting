@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 /**
  * @swagger
@@ -59,7 +60,7 @@ const { authenticate } = require('../middleware/auth.middleware');
  *       400:
  *         description: User already exists
  */
-router.post('/register', authController.register);
+router.post('/register', authLimiter, authController.register);
 
 /**
  * @swagger
@@ -113,7 +114,7 @@ router.post('/register', authController.register);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', authController.login);
+router.post('/login', authLimiter, authController.login);
 
 /**
  * @swagger
@@ -145,7 +146,7 @@ router.post('/login', authController.login);
  *       400:
  *         description: Invalid or expired OTP
  */
-router.post('/verify-email', authController.verifyEmail);
+router.post('/verify-email', authLimiter, authController.verifyEmail);
 
 /**
  * @swagger
@@ -172,7 +173,7 @@ router.post('/verify-email', authController.verifyEmail);
  *       404:
  *         description: User not found
  */
-router.post('/resend-otp', authController.resendOTP);
+router.post('/resend-otp', authLimiter, authController.resendOTP);
 
 // Google OAuth routes
 router.get('/google', authController.googleAuth);
