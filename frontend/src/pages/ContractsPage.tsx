@@ -8,8 +8,10 @@ import {
     Trash2,
     Clock,
     CheckCircle,
-    Edit3
+    Edit3,
+    Filter
 } from 'lucide-react';
+import GlassModal from '../components/GlassModal';
 
 interface Contract {
     _id: string;
@@ -44,6 +46,9 @@ export default function ContractsPage() {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [typeFilter, setTypeFilter] = useState('ALL');
 
     useEffect(() => {
         fetchContracts();
@@ -86,9 +91,12 @@ export default function ContractsPage() {
         }
     };
 
-    const filtered = contracts.filter(c =>
-        c.title.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = contracts.filter(c => {
+        const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
+        const matchesType = typeFilter === 'ALL' || c.contract_type === typeFilter;
+        return matchesSearch && matchesStatus && matchesType;
+    });
 
     if (loading) {
         return (
@@ -103,35 +111,56 @@ export default function ContractsPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>Contracts</h1>
-                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0, marginTop: '4px' }}>
+                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>Contracts</h1>
+                    <p style={{ fontSize: '15px', color: 'var(--color-text-secondary)', margin: 0, marginTop: '4px' }}>
                         AI-generated legal documents from your meetings
                     </p>
                 </div>
             </div>
 
-            {/* Search */}
-            <div style={{ marginBottom: '24px', position: 'relative', maxWidth: '400px' }}>
-                <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search contracts..."
-                    className="glass-input"
-                    style={{ paddingLeft: '42px' }}
-                />
+            {/* Search & Filters */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ flex: 1, position: 'relative', maxWidth: '400px' }}>
+                    <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search contracts..."
+                        className="glass-input"
+                        style={{ paddingLeft: '42px' }}
+                    />
+                </div>
+                <button
+                    className={`btn ${showFilters || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ height: '42px', padding: '0 24px' }} // mismatched height with search input (glass-input usually 42-48px depending on CSS)
+                    // glass-input has default height? In MeetingsPage I forced 48px. Let's force 42px here to match typical inputs or check CSS.
+                    // Actually let's assume standard button height.
+                    onClick={() => setShowFilters(true)}
+                >
+                    <Filter size={18} />
+                    Filters
+                    {(statusFilter !== 'ALL' || typeFilter !== 'ALL') && (
+                        <span style={{
+                            marginLeft: '8px',
+                            background: 'rgba(255,255,255,0.2)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '12px'
+                        }}>!</span>
+                    )}
+                </button>
             </div>
 
             {/* Contracts Grid */}
             {filtered.length === 0 ? (
                 <div className="dashboard-card" style={{ padding: '48px', textAlign: 'center' }}>
-                    <FileText size={48} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px' }} />
-                    <h3 style={{ fontSize: '16px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', margin: '0 0 8px' }}>
-                        No contracts yet
+                    <FileText size={48} style={{ color: 'var(--color-text-muted)', marginBottom: '16px', opacity: 0.5 }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: '500', color: 'var(--color-text-secondary)', margin: '0 0 8px' }}>
+                        {search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? 'No contracts found' : 'No contracts yet'}
                     </h3>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-                        Upload a meeting with business negotiations to generate contracts
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0 }}>
+                        {search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? 'Try adjusting filters' : 'Upload a meeting with business negotiations to generate contracts'}
                     </p>
                 </div>
             ) : (
@@ -149,15 +178,15 @@ export default function ContractsPage() {
                                         <FileText size={20} style={{ color: '#fbbf24' }} />
                                     </div>
                                     <div>
-                                        <h3 style={{ fontSize: '15px', fontWeight: '500', color: 'white', margin: 0 }}>{contract.title}</h3>
-                                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>
+                                        <h3 style={{ fontSize: '15px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>{contract.title}</h3>
+                                        <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
                                             {typeLabels[contract.contract_type] || contract.contract_type}
                                         </p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={(e) => handleDelete(contract._id, e)}
-                                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '4px' }}
+                                    style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', padding: '4px' }}
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -181,7 +210,7 @@ export default function ContractsPage() {
                                     )}
                                     {contract.status}
                                 </span>
-                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <Clock size={12} />
                                     {new Date(contract.created_at).toLocaleDateString()}
                                 </span>
@@ -190,6 +219,70 @@ export default function ContractsPage() {
                     ))}
                 </div>
             )}
+
+            <GlassModal
+                isOpen={showFilters}
+                onClose={() => setShowFilters(false)}
+                title="Filter Contracts"
+                footer={
+                    <>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                                setStatusFilter('ALL');
+                                setTypeFilter('ALL');
+                                setShowFilters(false);
+                            }}
+                        >
+                            Reset
+                        </button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => setShowFilters(false)}
+                        >
+                            Apply Filters
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                            Status
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {['ALL', ...Object.keys(statusColors)].map(status => (
+                                <button
+                                    key={status}
+                                    onClick={() => setStatusFilter(status)}
+                                    className={`btn ${statusFilter === status ? 'btn-primary' : 'btn-secondary'}`}
+                                    style={{ padding: '8px 16px', fontSize: '13px' }}
+                                >
+                                    {status === 'ALL' ? 'All Statuses' : status.charAt(0) + status.slice(1).toLowerCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                            Contract Type
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            {['ALL', ...Object.keys(typeLabels)].map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => setTypeFilter(type)}
+                                    className={`btn ${typeFilter === type ? 'btn-primary' : 'btn-secondary'}`}
+                                    style={{ justifyContent: 'flex-start', padding: '8px 12px', fontSize: '13px' }}
+                                >
+                                    {type === 'ALL' ? 'All Types' : typeLabels[type]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </GlassModal>
         </div>
     );
 }

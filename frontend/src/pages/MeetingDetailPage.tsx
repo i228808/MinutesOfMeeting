@@ -14,6 +14,7 @@ import {
     AlertCircle,
     CheckCircle2
 } from 'lucide-react';
+import GlassModal from '../components/GlassModal';
 
 interface Actor {
     name: string;
@@ -219,6 +220,40 @@ export default function MeetingDetailPage() {
         }
     };
 
+    const handleSave = async () => {
+        setActionLoading('save');
+        setActionError('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/meetings/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(editForm)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setMeeting(data.meeting);
+                setIsEditing(false);
+                toast.success('Meeting updated successfully!');
+                // Also sync calendar events if deadlines changed
+                if (editForm.processed_deadlines) {
+                    await handleCreateEvents();
+                }
+            } else {
+                setActionError(data.error || 'Failed to save changes');
+            }
+        } catch (error) {
+            setActionError('Failed to save changes');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const regions = [
         'Pakistan', 'United States', 'United Kingdom', 'European Union', 'India',
         'Canada', 'Australia', 'UAE', 'Singapore', 'Germany', 'France',
@@ -353,76 +388,59 @@ export default function MeetingDetailPage() {
             </div>
 
             {/* Contract Modal */}
-            {showContractModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.7)',
-                    backdropFilter: 'blur(5px)',
-                    zIndex: 1000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }} onClick={() => setShowContractModal(false)}>
-                    <div style={{
-                        background: '#18181b',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '16px',
-                        padding: '32px',
-                        width: '500px',
-                        maxWidth: '90%',
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-                    }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white', marginBottom: '24px' }}>
-                            Draft Contract
-                        </h2>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', marginBottom: '8px', fontSize: '14px' }}>
-                                Jurisdiction / Region
-                            </label>
-                            <select
-                                value={selectedRegion}
-                                onChange={(e) => setSelectedRegion(e.target.value)}
-                                className="glass-input"
-                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                            >
-                                {regions.map(r => (
-                                    <option key={r} value={r} style={{ background: '#18181b' }}>{r}</option>
-                                ))}
-                            </select>
-                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}>
-                                The AI will tailor the legal language to this jurisdiction.
-                            </p>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <button
-                                onClick={() => setShowContractModal(false)}
-                                className="btn-secondary"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDraftContract}
-                                className="btn-primary"
-                                disabled={actionLoading === 'contract'}
-                            >
-                                {actionLoading === 'contract' ? (
-                                    <>
-                                        <Loader2 size={16} className="animate-spin" style={{ marginRight: '8px' }} />
-                                        Drafting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <FileSignature size={16} style={{ marginRight: '8px' }} />
-                                        Generate Draft
-                                    </>
-                                )}
-                            </button>
-                        </div>
+            <GlassModal
+                isOpen={showContractModal}
+                onClose={() => setShowContractModal(false)}
+                title="Draft Contract"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setShowContractModal(false)}
+                            className="btn btn-ghost"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleDraftContract}
+                            className="btn btn-primary"
+                            disabled={actionLoading === 'contract'}
+                        >
+                            {actionLoading === 'contract' ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" style={{ marginRight: '8px' }} />
+                                    Drafting...
+                                </>
+                            ) : (
+                                <>
+                                    <FileSignature size={16} style={{ marginRight: '8px' }} />
+                                    Generate Draft
+                                </>
+                            )}
+                        </button>
+                    </>
+                }
+            >
+                <div>
+                    <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', color: 'var(--color-text-secondary)', marginBottom: '8px', fontSize: '14px' }}>
+                            Jurisdiction / Region
+                        </label>
+                        <select
+                            value={selectedRegion}
+                            onChange={(e) => setSelectedRegion(e.target.value)}
+                            className="glass-input"
+                            style={{ width: '100%' }}
+                        >
+                            {regions.map(r => (
+                                <option key={r} value={r} style={{ background: 'var(--color-bg-card)' }}>{r}</option>
+                            ))}
+                        </select>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '8px' }}>
+                            The AI will tailor the legal language to this jurisdiction.
+                        </p>
                     </div>
                 </div>
-            )}
+            </GlassModal>
 
             {/* Error Alert */}
             {actionError && (

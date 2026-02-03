@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Toaster } from 'sonner';
+import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardOverview from './pages/DashboardOverview';
@@ -12,13 +14,49 @@ import ContractEditorPage from './pages/ContractEditorPage';
 import RemindersPage from './pages/RemindersPage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import CookiesPage from './pages/CookiesPage';
+import GDPRPage from './pages/GDPRPage';
+import AboutPage from './pages/AboutPage';
+import FeaturesPage from './pages/FeaturesPage';
+import PricingPage from './pages/PricingPage';
+import DocsPage from './pages/DocsPage';
+import HelpPage from './pages/HelpPage';
+import BlogPage from './pages/BlogPage';
+import CareersPage from './pages/CareersPage';
+import IntegrationsPage from './pages/IntegrationsPage';
+import StatusPage from './pages/StatusPage';
+import ChangelogPage from './pages/ChangelogPage';
+import ContactPage from './pages/ContactPage';
+
+import PressPage from './pages/PressPage';
+
+// Body class controller for proper scrolling behavior
+function BodyClassController() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const isDashboard = location.pathname.startsWith('/dashboard');
+
+    if (isDashboard) {
+      document.body.classList.remove('landing-page');
+      document.body.classList.add('dashboard-page');
+    } else {
+      document.body.classList.add('landing-page');
+      document.body.classList.remove('dashboard-page');
+    }
+  }, [location]);
+
+  return null;
+}
 
 // Auth guard component
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token');
 
   if (!token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -48,127 +86,151 @@ function AuthCallback() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0c0c0f' }}>
-      <div className="animate-spin" style={{ width: '32px', height: '32px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#d97706', borderRadius: '50%' }} />
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--color-bg-base)' }}>
+      <div className="animate-spin" style={{ width: '32px', height: '32px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%' }} />
     </div>
   );
 }
 
+import { ThemeProvider } from './context/ThemeContext';
+
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
+    <ThemeProvider>
+      <BrowserRouter>
+        <BodyClassController />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Protected dashboard routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <DashboardOverview />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/meetings"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <MeetingsPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/meetings/:id"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <MeetingDetailPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/upload"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <UploadPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/contracts"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <ContractsPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/contracts/:id"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <ContractEditorPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/calendar"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <CalendarPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/reminders"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <RemindersPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/settings"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <SettingsPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/subscription"
-          element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <SubscriptionPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          }
-        />
+          {/* Static pages */}
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
+          <Route path="/gdpr" element={<GDPRPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/integrations" element={<IntegrationsPage />} />
+          <Route path="/status" element={<StatusPage />} />
+          <Route path="/changelog" element={<ChangelogPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/press" element={<PressPage />} />
 
-        {/* Catch-all redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <Toaster theme="dark" position="top-right" />
-    </BrowserRouter>
+          {/* Protected dashboard routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <DashboardOverview />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/meetings"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <MeetingsPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/meetings/:id"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <MeetingDetailPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/upload"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <UploadPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/contracts"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <ContractsPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/contracts/:id"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <ContractEditorPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/calendar"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <CalendarPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/reminders"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <RemindersPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/settings"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <SettingsPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/subscription"
+            element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <SubscriptionPage />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <Toaster theme="dark" position="top-right" />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

@@ -5,11 +5,9 @@ import {
     FileText,
     Clock,
     FileSignature,
-    TrendingUp,
     ArrowUpRight,
     Calendar,
     Sparkles,
-    Bell,
     AlertCircle
 } from 'lucide-react';
 
@@ -46,9 +44,9 @@ interface Reminder {
 
 const TIER_LIMITS = {
     FREE: { uploads: 5, audio: 10, contracts: 3 },
-    BASIC: { uploads: 20, audio: 120, contracts: 10 },
-    PREMIUM: { uploads: 50, audio: 300, contracts: Infinity },
-    ULTRA: { uploads: Infinity, audio: Infinity, contracts: Infinity }
+    STARTER: { uploads: 20, audio: 120, contracts: 10 },
+    PRO: { uploads: 50, audio: 300, contracts: Infinity },
+    UNLIMITED: { uploads: Infinity, audio: Infinity, contracts: Infinity }
 };
 
 const API_URL = 'http://localhost:5000/api';
@@ -174,268 +172,243 @@ export default function DashboardOverview() {
     }
 
     return (
-        <div style={{ padding: '32px 40px', maxWidth: '1400px' }} className="animate-fadeIn">
+        <div style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }} className="animate-fadeIn">
             {/* Header */}
-            <div style={{ marginBottom: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>
+            <div className="flex-between" style={{ marginBottom: '40px' }}>
+                <div>
+                    <h1 className="text-display-md" style={{ fontWeight: '700', color: 'white', marginBottom: '8px' }}>
                         Welcome back, {user?.name?.split(' ')[0] || 'there'}
                     </h1>
-                    <span className={`badge badge-tier-${tier.toLowerCase()}`}>
-                        {tier} Plan
-                    </span>
+                    <p style={{ fontSize: '16px', color: 'var(--color-text-secondary)' }}>
+                        Here's your meeting intelligence overview.
+                    </p>
                 </div>
-                <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                    Here's what's happening with your meetings today.
-                </p>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                    <Link to="/dashboard/calendar" className="btn btn-secondary">
+                        <Calendar size={18} />
+                        View Calendar
+                    </Link>
+                    <Link to="/dashboard/upload" className="btn btn-primary">
+                        <Upload size={18} />
+                        Upload Meeting
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
+            <div className="grid-cols-4" style={{ marginBottom: '40px' }}>
                 {/* Uploads */}
-                <div className="stat-card">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div className="stat-card delay-100 animate-fadeInUp">
+                    <div className="flex-between" style={{ marginBottom: '20px' }}>
                         <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '10px',
-                            background: 'rgba(217, 119, 6, 0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            width: '48px', height: '48px', borderRadius: '14px',
+                            background: 'rgba(255, 107, 74, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
-                            <Upload size={20} style={{ color: '#fbbf24' }} />
+                            <Upload size={24} style={{ color: 'var(--color-primary)' }} />
                         </div>
-                        <TrendingUp size={16} style={{ color: '#4ade80' }} />
-                    </div>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Meetings Uploaded</p>
-                    <p style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>
-                        {usage?.monthly_uploads || 0}
-                        <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>
-                            {limits.uploads !== Infinity ? ` / ${limits.uploads}` : ''}
+                        <span className={`badge ${usage?.monthly_uploads ? 'badge-success' : 'badge-free'}`}>
+                            {limits.uploads !== Infinity ? `${Math.round((usage?.monthly_uploads || 0) / limits.uploads * 100)}% Used` : 'Unlimited'}
                         </span>
-                    </p>
+                    </div>
+                    <p className="text-label" style={{ marginBottom: '8px' }}>Monthly Uploads</p>
+                    <div className="flex-between">
+                        <p className="text-display-md" style={{ fontSize: '32px' }}>{usage?.monthly_uploads || 0}</p>
+                        <p className="text-small">/ {limits.uploads === Infinity ? '∞' : limits.uploads}</p>
+                    </div>
                     {limits.uploads !== Infinity && (
-                        <div className="progress-bar" style={{ marginTop: '12px' }}>
+                        <div className="progress-bar" style={{ marginTop: '16px' }}>
                             <div className="progress-fill" style={{ width: `${getUsagePercentage(usage?.monthly_uploads || 0, limits.uploads)}%` }} />
                         </div>
                     )}
                 </div>
 
                 {/* Audio Minutes */}
-                <div className="stat-card">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div className="stat-card delay-200 animate-fadeInUp">
+                    <div className="flex-between" style={{ marginBottom: '20px' }}>
                         <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '10px',
-                            background: 'rgba(59, 130, 246, 0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            width: '48px', height: '48px', borderRadius: '14px',
+                            background: 'rgba(92, 157, 255, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
-                            <Clock size={20} style={{ color: '#60a5fa' }} />
+                            <Clock size={24} style={{ color: 'var(--color-info)' }} />
                         </div>
                     </div>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Audio Minutes</p>
-                    <p style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>
-                        {Math.round(usage?.monthly_audio_minutes || 0)}
-                        <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>
-                            {limits.audio !== Infinity ? ` / ${limits.audio} min` : ' min'}
-                        </span>
-                    </p>
+                    <p className="text-label" style={{ marginBottom: '8px' }}>Audio Minutes</p>
+                    <div className="flex-between">
+                        <p className="text-display-md" style={{ fontSize: '32px' }}>{Math.round(usage?.monthly_audio_minutes || 0)}</p>
+                        <p className="text-small">/ {limits.audio === Infinity ? '∞' : limits.audio}</p>
+                    </div>
                     {limits.audio !== Infinity && (
-                        <div className="progress-bar" style={{ marginTop: '12px' }}>
-                            <div className="progress-fill" style={{ width: `${getUsagePercentage(usage?.monthly_audio_minutes || 0, limits.audio)}%` }} />
+                        <div className="progress-bar" style={{ marginTop: '16px' }}>
+                            <div className="progress-fill" style={{ width: `${getUsagePercentage(usage?.monthly_audio_minutes || 0, limits.audio)}%`, background: 'var(--color-info)' }} />
                         </div>
                     )}
                 </div>
 
                 {/* Contracts */}
-                <div className="stat-card">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div className="stat-card delay-300 animate-fadeInUp">
+                    <div className="flex-between" style={{ marginBottom: '20px' }}>
                         <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '10px',
-                            background: 'rgba(168, 85, 247, 0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            width: '48px', height: '48px', borderRadius: '14px',
+                            background: 'rgba(168, 85, 247, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
-                            <FileSignature size={20} style={{ color: '#c084fc' }} />
+                            <FileSignature size={24} style={{ color: '#c084fc' }} />
                         </div>
                     </div>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Contracts Created</p>
-                    <p style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>
-                        {usage?.monthly_contracts || 0}
-                        <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>
-                            {limits.contracts !== Infinity ? ` / ${limits.contracts}` : ''}
-                        </span>
-                    </p>
-                    {limits.contracts !== Infinity && (
-                        <div className="progress-bar" style={{ marginTop: '12px' }}>
-                            <div className="progress-fill" style={{ width: `${getUsagePercentage(usage?.monthly_contracts || 0, limits.contracts)}%` }} />
-                        </div>
-                    )}
+                    <p className="text-label" style={{ marginBottom: '8px' }}>Contracts Generated</p>
+                    <div className="flex-between">
+                        <p className="text-display-md" style={{ fontSize: '32px' }}>{usage?.monthly_contracts || 0}</p>
+                        <p className="text-small">/ {limits.contracts === Infinity ? '∞' : limits.contracts}</p>
+                    </div>
                 </div>
 
-                {/* Upcoming Deadlines */}
-                <Link to="/dashboard/calendar" className="stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                {/* Upcoming Events */}
+                <Link to="/dashboard/calendar" className="stat-card delay-300 animate-fadeInUp" style={{ textDecoration: 'none', cursor: 'pointer', border: '1px solid var(--color-border-hover)' }}>
+                    <div className="flex-between" style={{ marginBottom: '20px' }}>
                         <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '10px',
-                            background: 'rgba(34, 197, 94, 0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            width: '48px', height: '48px', borderRadius: '14px',
+                            background: 'rgba(74, 227, 181, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
-                            <Calendar size={20} style={{ color: '#4ade80' }} />
+                            <Calendar size={24} style={{ color: 'var(--color-secondary)' }} />
                         </div>
-                        <ArrowUpRight size={16} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                        <ArrowUpRight size={20} style={{ color: 'var(--color-text-muted)' }} />
                     </div>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Upcoming Deadlines</p>
-                    <p style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>
-                        {upcomingDeadlines.length}
-                        <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}> this week</span>
-                    </p>
+                    <p className="text-label" style={{ marginBottom: '8px' }}>Upcoming Events</p>
+                    <div className="flex-between">
+                        <p className="text-display-md" style={{ fontSize: '32px' }}>{upcomingDeadlines.length}</p>
+                        <p className="text-small">This Month</p>
+                    </div>
                 </Link>
             </div>
 
             {/* Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '7fr 3fr', gap: '32px' }}>
                 {/* Recent Meetings */}
-                <div className="dashboard-card" style={{ padding: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                        <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'white', margin: 0 }}>
-                            Recent Meetings
-                        </h2>
-                        <Link to="/dashboard/meetings" style={{ fontSize: '13px', color: '#fbbf24', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                            View all <ArrowUpRight size={14} style={{ marginLeft: '4px' }} />
+                <div className="animate-fadeInUp delay-200">
+                    <div className="flex-between" style={{ marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '18px', fontWeight: '700' }}>Recent Meetings</h2>
+                        <Link to="/dashboard/meetings" className="btn-ghost btn-sm">
+                            View All <ArrowUpRight size={14} style={{ marginLeft: '4px' }} />
                         </Link>
                     </div>
 
-                    {recentMeetings.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                            <FileText size={40} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px' }} />
-                            <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, marginBottom: '8px' }}>No meetings yet</p>
-                            <Link to="/dashboard/upload" style={{ fontSize: '14px', color: '#fbbf24', textDecoration: 'none' }}>
-                                Upload your first meeting →
-                            </Link>
-                        </div>
-                    ) : (
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentMeetings.map((meeting) => (
-                                    <tr key={meeting._id}>
-                                        <td>
-                                            <Link to={`/dashboard/meetings/${meeting._id}`} style={{ color: 'white', textDecoration: 'none' }}>
-                                                {meeting.title}
-                                            </Link>
-                                        </td>
-                                        <td style={{ color: 'rgba(255,255,255,0.5)' }}>{formatDate(meeting.created_at)}</td>
-                                        <td>
-                                            <span className={`badge ${getStatusBadge(meeting.status)}`}>
-                                                {meeting.status}
-                                            </span>
-                                        </td>
+                    <div className="rich-table-container">
+                        {recentMeetings.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                                <FileText size={48} style={{ color: 'var(--color-text-muted)', opacity: 0.2, marginBottom: '16px' }} />
+                                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>No meetings yet</h3>
+                                <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>Upload your first meeting recording to get started.</p>
+                                <Link to="/dashboard/upload" className="btn btn-primary">
+                                    <Upload size={16} />
+                                    Upload Meeting
+                                </Link>
+                            </div>
+                        ) : (
+                            <table className="rich-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th></th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                                </thead>
+                                <tbody>
+                                    {recentMeetings.map((meeting) => (
+                                        <tr key={meeting._id}>
+                                            <td style={{ fontWeight: '600', color: 'white' }}>
+                                                {meeting.title}
+                                                {meeting.summary && (
+                                                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: '400' }}>
+                                                        {meeting.summary.substring(0, 60)}...
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td>{formatDate(meeting.created_at)}</td>
+                                            <td>
+                                                <span className={`badge ${getStatusBadge(meeting.status)}`}>
+                                                    {meeting.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <Link to={`/dashboard/meetings/${meeting._id}`} className="btn-icon btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <ArrowUpRight size={18} />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
                 </div>
 
-                {/* Sidebar */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {/* Upcoming Deadlines List */}
-                    <div className="dashboard-card" style={{ padding: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'white', margin: 0, display: 'flex', alignItems: 'center' }}>
-                                <Calendar size={16} style={{ marginRight: '8px', color: '#4ade80' }} />
-                                Upcoming Events
-                            </h3>
-                            <Link to="/dashboard/calendar" style={{ fontSize: '12px', color: '#fbbf24', textDecoration: 'none' }}>
-                                View all
-                            </Link>
-                        </div>
-                        {upcomingDeadlines.length === 0 ? (
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>No upcoming events</p>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {upcomingDeadlines.slice(0, 4).map(event => (
-                                    <div key={event._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                                        <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: event.color || '#f59e0b' }} />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ fontSize: '13px', color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{event.title}</p>
-                                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{formatDeadlineDate(event.start_time)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                {/* Sidebar Column */}
+                <div className="animate-fadeInUp delay-300" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-                    {/* Reminders */}
-                    <div className="dashboard-card" style={{ padding: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'white', margin: 0, display: 'flex', alignItems: 'center' }}>
-                                <Bell size={16} style={{ marginRight: '8px', color: '#fbbf24' }} />
-                                Pending Reminders
-                            </h3>
-                            <Link to="/dashboard/reminders" style={{ fontSize: '12px', color: '#fbbf24', textDecoration: 'none' }}>
-                                View all
-                            </Link>
-                        </div>
-                        {reminders.length === 0 ? (
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>No pending reminders</p>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {reminders.map(reminder => (
-                                    <div key={reminder._id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                                        <AlertCircle size={14} style={{ color: '#fbbf24', marginTop: '2px', flexShrink: 0 }} />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ fontSize: '13px', color: 'white', margin: 0 }}>{reminder.task}</p>
-                                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{formatDeadlineDate(reminder.remind_at)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Upgrade Banner (for FREE users) */}
+                    {/* Upgrade Banner */}
                     {tier === 'FREE' && (
                         <div style={{
-                            padding: '20px',
-                            background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.1) 100%)',
-                            border: '1px solid rgba(217, 119, 6, 0.3)',
-                            borderRadius: '12px'
+                            padding: '24px',
+                            borderRadius: '20px',
+                            background: 'linear-gradient(135deg, rgba(255, 107, 74, 0.15) 0%, rgba(20, 20, 25, 0) 100%)',
+                            border: '1px solid rgba(255, 107, 74, 0.2)',
+                            boxShadow: '0 8px 32px rgba(255, 107, 74, 0.1)'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                                <Sparkles size={20} style={{ color: '#fbbf24', marginRight: '8px' }} />
-                                <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'white', margin: 0 }}>Upgrade to Pro</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--color-primary)', color: 'black' }}>
+                                    <Sparkles size={20} />
+                                </div>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700' }}>Unlock Pro</h3>
                             </div>
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: '0 0 16px' }}>
-                                Get 50 uploads/month, 120 audio minutes, and priority processing.
+                            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginBottom: '20px', lineHeight: '1.6' }}>
+                                Get unlimited uploads, advanced AI analysis, and generated legal contracts.
                             </p>
-                            <Link to="/dashboard/subscription" className="btn-primary" style={{ textDecoration: 'none', fontSize: '13px', padding: '10px 16px' }}>
-                                View Plans
+                            <Link to="/dashboard/subscription" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                Upgrade Plan
                             </Link>
                         </div>
                     )}
+
+                    {/* Pending Reminders */}
+                    <div className="dashboard-card" style={{ padding: '24px' }}>
+                        <div className="flex-between" style={{ marginBottom: '20px' }}>
+                            <h3 style={{ fontSize: '16px', fontWeight: '700' }}>Reminders</h3>
+                            <Link to="/dashboard/reminders" className="text-small">View All</Link>
+                        </div>
+
+                        {reminders.length === 0 ? (
+                            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '14px', background: 'var(--color-bg-surface)', borderRadius: '12px' }}>
+                                No pending tasks
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {reminders.map(reminder => (
+                                    <div key={reminder._id} style={{
+                                        padding: '12px 16px',
+                                        background: 'var(--color-bg-surface)',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--color-border-subtle)',
+                                        display: 'flex',
+                                        gap: '12px'
+                                    }}>
+                                        <AlertCircle size={18} style={{ color: 'var(--color-warning)', flexShrink: 0, marginTop: '2px' }} />
+                                        <div>
+                                            <p style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>{reminder.task}</p>
+                                            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>{formatDeadlineDate(reminder.remind_at)}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+
 

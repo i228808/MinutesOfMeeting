@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
     },
     subscription_tier: {
         type: String,
-        enum: ['FREE', 'BASIC', 'PREMIUM', 'ULTRA'],
+        enum: ['FREE', 'STARTER', 'PRO', 'UNLIMITED'],
         default: 'FREE'
     },
     google_access_token: {

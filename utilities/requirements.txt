@@ -1,11 +1,9 @@
 flask
-openai-whisper
 sentence-transformers
 weaviate-client
 pypdfium2
 tiktoken
 numpy
-torch
 python-dotenv
 requests
 pytest

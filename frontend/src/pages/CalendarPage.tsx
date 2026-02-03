@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { Plus, ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import GlassModal from '../components/GlassModal';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = { 'en-US': enUS };
@@ -196,7 +197,7 @@ export default function CalendarPage() {
                     <ChevronRight size={18} />
                 </button>
             </div>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'white', margin: 0 }}>{label}</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>{label}</h2>
             <div style={{ display: 'flex', gap: '8px' }}>
                 {['month', 'week', 'day'].map((v) => (
                     <button
@@ -225,8 +226,8 @@ export default function CalendarPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>Calendar</h1>
-                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0, marginTop: '4px' }}>
+                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>Calendar</h1>
+                    <p style={{ fontSize: '15px', color: 'var(--color-text-secondary)', margin: 0, marginTop: '4px' }}>
                         Manage deadlines and events
                     </p>
                 </div>
@@ -243,21 +244,21 @@ export default function CalendarPage() {
             {/* Calendar */}
             <div className="dashboard-card" style={{ padding: '20px', height: 'calc(100% - 100px)' }}>
                 <style>{`
-          .rbc-calendar { background: transparent; color: white; }
-          .rbc-header { color: rgba(255,255,255,0.6); padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 500; }
-          .rbc-today { background: rgba(217, 119, 6, 0.1) !important; }
-          .rbc-off-range-bg { background: rgba(0,0,0,0.2); }
-          .rbc-month-view, .rbc-time-view { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
-          .rbc-day-bg + .rbc-day-bg { border-left: 1px solid rgba(255,255,255,0.05); }
-          .rbc-month-row + .rbc-month-row { border-top: 1px solid rgba(255,255,255,0.05); }
-          .rbc-date-cell { padding: 8px; color: rgba(255,255,255,0.7); }
-          .rbc-date-cell.rbc-now { font-weight: bold; color: #fbbf24; }
+          .rbc-calendar { background: transparent; color: var(--color-text-primary); }
+          .rbc-header { color: var(--color-text-secondary); padding: 12px 4px; border-bottom: 1px solid var(--color-border-subtle); font-weight: 500; }
+          .rbc-today { background: var(--color-primary-muted) !important; }
+          .rbc-off-range-bg { background: var(--color-bg-elevated); }
+          .rbc-month-view, .rbc-time-view { border: 1px solid var(--color-border-subtle); border-radius: 8px; }
+          .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--color-border-subtle); }
+          .rbc-month-row + .rbc-month-row { border-top: 1px solid var(--color-border-subtle); }
+          .rbc-date-cell { padding: 8px; color: var(--color-text-secondary); }
+          .rbc-date-cell.rbc-now { font-weight: bold; color: var(--color-primary); }
           .rbc-event { padding: 2px 6px; }
-          .rbc-event:focus { outline: 2px solid #fbbf24; }
-          .rbc-time-header, .rbc-time-content { border-color: rgba(255,255,255,0.1); }
-          .rbc-timeslot-group { border-color: rgba(255,255,255,0.05); }
-          .rbc-time-slot { color: rgba(255,255,255,0.4); }
-          .rbc-current-time-indicator { background: #d97706; }
+          .rbc-event:focus { outline: 2px solid var(--color-primary); }
+          .rbc-time-header, .rbc-time-content { border-color: var(--color-border-subtle); }
+          .rbc-timeslot-group { border-color: var(--color-border-subtle); }
+          .rbc-time-slot { color: var(--color-text-muted); }
+          .rbc-current-time-indicator { background: var(--color-primary); }
           .rbc-toolbar { display: none; }
         `}</style>
                 <Calendar
@@ -278,103 +279,108 @@ export default function CalendarPage() {
                 />
             </div>
 
-            {/* Event Modal */}
-            {showModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                    <div className="dashboard-card" style={{ width: '100%', maxWidth: '480px', padding: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                            <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: 0 }}>
-                                {selectedEvent ? 'Edit Event' : 'New Event'}
-                            </h3>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
-                                <X size={20} />
+            {/* GlassModal for Event Editing */}
+            <GlassModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={selectedEvent ? 'Edit Event' : 'New Event'}
+                footer={
+                    <>
+                        {selectedEvent && (
+                            <button
+                                onClick={handleDelete}
+                                className="btn btn-secondary"
+                                style={{
+                                    width: 'auto',
+                                    padding: '0 16px',
+                                    color: 'var(--color-error)',
+                                    borderColor: 'var(--color-error)',
+                                    marginRight: 'auto'
+                                }}
+                            >
+                                Delete
                             </button>
+                        )}
+                        <button onClick={() => setShowModal(false)} className="btn btn-ghost">
+                            Cancel
+                        </button>
+                        <button onClick={handleSubmit} className="btn-primary">
+                            <CalendarIcon size={16} style={{ marginRight: '8px' }} />
+                            {selectedEvent ? 'Update Event' : 'Create Event'}
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Title</label>
+                        <input
+                            type="text"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="glass-input"
+                            placeholder="Event title"
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Description</label>
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className="glass-input"
+                            placeholder="Event description"
+                            rows={3}
+                        />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Start</label>
+                            <input
+                                type="datetime-local"
+                                value={formData.start_time}
+                                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                                className="glass-input"
+                            />
                         </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Title</label>
-                                <input
-                                    type="text"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="glass-input"
-                                    placeholder="Event title"
-                                />
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Description</label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="glass-input"
-                                    placeholder="Event description"
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Start</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={formData.start_time}
-                                        onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                                        className="glass-input"
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>End</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={formData.end_time}
-                                        onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                                        className="glass-input"
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input
-                                    type="checkbox"
-                                    id="allDay"
-                                    checked={formData.all_day}
-                                    onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
-                                    style={{ width: '16px', height: '16px', accentColor: '#d97706' }}
-                                />
-                                <label htmlFor="allDay" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>All day event</label>
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Type</label>
-                                <select
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value, color: eventColors[e.target.value] || '#d97706' })}
-                                    className="glass-input"
-                                >
-                                    <option value="custom">Custom</option>
-                                    <option value="deadline">Deadline</option>
-                                    <option value="reminder">Reminder</option>
-                                    <option value="meeting">Meeting</option>
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }}>
-                                    <CalendarIcon size={16} style={{ marginRight: '8px' }} />
-                                    {selectedEvent ? 'Update' : 'Create'}
-                                </button>
-                                {selectedEvent && (
-                                    <button onClick={handleDelete} className="btn-secondary" style={{ width: 'auto', padding: '0 16px', color: '#f87171' }}>
-                                        Delete
-                                    </button>
-                                )}
-                            </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>End</label>
+                            <input
+                                type="datetime-local"
+                                value={formData.end_time}
+                                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                                className="glass-input"
+                            />
                         </div>
                     </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="checkbox"
+                            id="allDay"
+                            checked={formData.all_day}
+                            onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
+                            style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }}
+                        />
+                        <label htmlFor="allDay" style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>All day event</label>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Type</label>
+                        <select
+                            value={formData.type}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value, color: eventColors[e.target.value] || '#d97706' })}
+                            className="glass-input"
+                        >
+                            <option value="custom">Custom</option>
+                            <option value="deadline">Deadline</option>
+                            <option value="reminder">Reminder</option>
+                            <option value="meeting">Meeting</option>
+                        </select>
+                    </div>
                 </div>
-            )}
+            </GlassModal>
         </div>
     );
 }

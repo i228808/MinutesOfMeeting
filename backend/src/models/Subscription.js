@@ -9,7 +9,7 @@ const subscriptionSchema = new mongoose.Schema({
     },
     tier: {
         type: String,
-        enum: ['FREE', 'BASIC', 'PREMIUM', 'ULTRA'],
+        enum: ['FREE', 'STARTER', 'PRO', 'UNLIMITED'],
         default: 'FREE'
     },
     limits: {

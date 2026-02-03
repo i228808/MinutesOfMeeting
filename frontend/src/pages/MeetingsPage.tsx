@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Plus,
@@ -8,9 +8,12 @@ import {
     MoreVertical,
     ExternalLink,
     Trash2,
-    Calendar,
-    Sheet
+    Sheet,
+    Clock,
+    Calendar, // Keeping import if needed or remove if unused, will keep for safety
+    CheckCircle // Keeping for safety
 } from 'lucide-react';
+import GlassModal from '../components/GlassModal';
 
 interface Meeting {
     _id: string;
@@ -27,6 +30,9 @@ export default function MeetingsPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [dateFilter, setDateFilter] = useState('ALL');
 
     useEffect(() => {
         fetchMeetings();
@@ -89,9 +95,27 @@ export default function MeetingsPage() {
         }
     };
 
-    const filteredMeetings = meetings.filter(m =>
-        m.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredMeetings = meetings.filter(m => {
+        const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
+
+        let matchesDate = true;
+        if (dateFilter !== 'ALL') {
+            const meetingDate = new Date(m.created_at);
+            const now = new Date();
+            if (dateFilter === 'TODAY') {
+                matchesDate = meetingDate.toDateString() === now.toDateString();
+            } else if (dateFilter === 'WEEK') {
+                const weekAgo = new Date(now.setDate(now.getDate() - 7));
+                matchesDate = meetingDate >= weekAgo;
+            } else if (dateFilter === 'MONTH') {
+                const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                matchesDate = meetingDate >= monthAgo;
+            }
+        }
+
+        return matchesSearch && matchesStatus && matchesDate;
+    });
 
     if (loading) {
         return (
@@ -102,67 +126,88 @@ export default function MeetingsPage() {
     }
 
     return (
-        <div style={{ padding: '32px 40px', maxWidth: '1400px' }} className="animate-fadeIn">
+        <div style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }} className="animate-fadeIn">
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+            <div className="flex-between" style={{ marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>Meetings</h1>
-                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0, marginTop: '4px' }}>
-                        {meetings.length} meetings total
+                    <h1 className="text-display-md" style={{ fontSize: '32px', fontWeight: '700', color: 'var(--color-text-primary)' }}>Meetings</h1>
+                    <p style={{ fontSize: '16px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
+                        Manage and analyze your recorded sessions
                     </p>
                 </div>
-                <Link to="/dashboard/upload" className="btn-primary" style={{ width: 'auto', textDecoration: 'none', padding: '12px 20px' }}>
-                    <Plus size={18} style={{ marginRight: '8px' }} />
+                <Link to="/dashboard/upload" className="btn btn-primary btn-lg">
+                    <Plus size={20} />
                     New Meeting
                 </Link>
             </div>
 
             {/* Search & Filters */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                    <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                     <input
                         type="text"
-                        placeholder="Search meetings..."
+                        placeholder="Search by title..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="glass-input"
-                        style={{ paddingLeft: '44px' }}
+                        style={{ paddingLeft: '48px', height: '48px', fontSize: '15px' }}
                     />
                 </div>
-                <button className="btn-secondary" style={{ width: 'auto', padding: '0 16px' }}>
-                    <Filter size={16} style={{ marginRight: '8px' }} />
+                <button
+                    className={`btn ${showFilters || statusFilter !== 'ALL' || dateFilter !== 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ height: '48px', padding: '0 24px' }}
+                    onClick={() => setShowFilters(true)}
+                >
+                    <Filter size={18} />
                     Filters
+                    {(statusFilter !== 'ALL' || dateFilter !== 'ALL') && (
+                        <span style={{
+                            marginLeft: '8px',
+                            background: 'rgba(255,255,255,0.2)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '12px'
+                        }}>
+                            !
+                        </span>
+                    )}
                 </button>
             </div>
 
             {/* Meetings List */}
-            {filteredMeetings.length === 0 ? (
-                <div className="dashboard-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
-                    <FileText size={48} style={{ color: 'rgba(255,255,255,0.15)', marginBottom: '16px' }} />
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: '0 0 8px' }}>
-                        {searchQuery ? 'No meetings found' : 'No meetings yet'}
-                    </h3>
-                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px' }}>
-                        {searchQuery ? 'Try adjusting your search' : 'Upload your first meeting recording to get started'}
-                    </p>
-                    {!searchQuery && (
-                        <Link to="/dashboard/upload" className="btn-primary" style={{ width: 'auto', display: 'inline-flex', textDecoration: 'none', padding: '12px 24px' }}>
-                            <Plus size={18} style={{ marginRight: '8px' }} />
-                            Upload Meeting
-                        </Link>
-                    )}
-                </div>
-            ) : (
-                <div className="dashboard-card" style={{ overflow: 'hidden' }}>
-                    <table className="data-table">
+            <div className="rich-table-container">
+                {filteredMeetings.length === 0 ? (
+                    <div style={{ padding: '80px', textAlign: 'center' }}>
+                        <div style={{
+                            width: '80px', height: '80px', borderRadius: '24px',
+                            background: 'rgba(255,255,255,0.03)',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'
+                        }}>
+                            <FileText size={32} style={{ color: 'var(--color-text-muted)', opacity: 0.5 }} />
+                        </div>
+                        <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--color-text-primary)', marginBottom: '8px' }}>
+                            {searchQuery ? 'No meetings found' : 'No meetings yet'}
+                        </h3>
+                        <p style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
+                            {searchQuery ? 'Try adjusting your search terms' : 'Upload your first meeting recording to get started'}
+                        </p>
+                        {!searchQuery && (
+                            <Link to="/dashboard/upload" className="btn btn-primary">
+                                <Plus size={18} />
+                                Upload First Meeting
+                            </Link>
+                        )}
+                    </div>
+                ) : (
+                    <table className="rich-table">
                         <thead>
                             <tr>
-                                <th>Title</th>
+                                <th style={{ width: '40%' }}>Title</th>
                                 <th>Duration</th>
                                 <th>Status</th>
                                 <th>Date</th>
-                                <th style={{ width: '50px' }}></th>
+                                <th style={{ width: '60px' }}></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -171,89 +216,65 @@ export default function MeetingsPage() {
                                     <td>
                                         <Link
                                             to={`/dashboard/meetings/${meeting._id}`}
-                                            style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}
+                                            style={{ display: 'block', textDecoration: 'none' }}
                                         >
-                                            {meeting.title}
+                                            <span style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: 'var(--color-text-primary)', marginBottom: '4px' }}>
+                                                {meeting.title}
+                                            </span>
+                                            {meeting.summary && (
+                                                <span style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                                                    {meeting.summary.length > 80 ? meeting.summary.substring(0, 80) + '...' : meeting.summary}
+                                                </span>
+                                            )}
                                         </Link>
-                                        {meeting.summary && (
-                                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {meeting.summary}
-                                            </p>
-                                        )}
                                     </td>
-                                    <td style={{ color: 'rgba(255,255,255,0.6)' }}>
-                                        {meeting.audio_duration_minutes ? `${Math.round(meeting.audio_duration_minutes)} min` : '-'}
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
+                                            <Clock size={14} style={{ color: 'var(--color-text-muted)' }} />
+                                            {meeting.audio_duration_minutes ? `${Math.round(meeting.audio_duration_minutes)} min` : '-'}
+                                        </div>
                                     </td>
                                     <td>
                                         <span className={`badge ${getStatusBadge(meeting.status)}`}>
                                             {meeting.status}
                                         </span>
                                     </td>
-                                    <td style={{ color: 'rgba(255,255,255,0.5)' }}>
+                                    <td style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
                                         {formatDate(meeting.created_at)}
                                     </td>
                                     <td>
                                         <div style={{ position: 'relative' }}>
                                             <button
                                                 onClick={() => setActiveMenu(activeMenu === meeting._id ? null : meeting._id)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: 'rgba(255,255,255,0.4)',
-                                                    cursor: 'pointer',
-                                                    padding: '8px',
-                                                    borderRadius: '6px'
-                                                }}
+                                                className="btn-icon btn-ghost"
                                             >
-                                                <MoreVertical size={16} />
+                                                <MoreVertical size={18} />
                                             </button>
 
                                             {activeMenu === meeting._id && (
-                                                <div style={{
+                                                <div className="glass-dropdown" style={{
                                                     position: 'absolute',
-                                                    right: 0,
-                                                    top: '100%',
-                                                    background: 'rgba(20, 20, 25, 0.98)',
-                                                    border: '1px solid rgba(255,255,255,0.1)',
-                                                    borderRadius: '8px',
-                                                    padding: '8px',
-                                                    minWidth: '160px',
-                                                    zIndex: 50,
-                                                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                                                    right: '100%',
+                                                    top: '0',
+                                                    marginRight: '8px',
+                                                    width: '180px',
+                                                    zIndex: 50
                                                 }}>
                                                     <Link
                                                         to={`/dashboard/meetings/${meeting._id}`}
-                                                        style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', color: 'rgba(255,255,255,0.8)', textDecoration: 'none', borderRadius: '6px', fontSize: '13px' }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                        className="glass-dropdown-item"
                                                     >
                                                         <ExternalLink size={14} style={{ marginRight: '10px' }} />
                                                         View Details
                                                     </Link>
-                                                    <button
-                                                        onClick={() => {/* Export to sheets */ }}
-                                                        style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 12px', color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                    >
+                                                    <button className="glass-dropdown-item" onClick={() => {/* Export */ }}>
                                                         <Sheet size={14} style={{ marginRight: '10px' }} />
-                                                        Export to Sheets
+                                                        Export
                                                     </button>
-                                                    <button
-                                                        onClick={() => {/* Create calendar events */ }}
-                                                        style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 12px', color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                    >
-                                                        <Calendar size={14} style={{ marginRight: '10px' }} />
-                                                        Create Events
-                                                    </button>
-                                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+                                                    <div style={{ height: '1px', background: 'var(--color-border-subtle)', margin: '4px 0' }} />
                                                     <button
                                                         onClick={() => handleDelete(meeting._id)}
-                                                        style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 12px', color: '#f87171', background: 'none', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(248,113,113,0.1)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                        className="glass-dropdown-item danger"
                                                     >
                                                         <Trash2 size={14} style={{ marginRight: '10px' }} />
                                                         Delete
@@ -266,8 +287,86 @@ export default function MeetingsPage() {
                             ))}
                         </tbody>
                     </table>
+                )}
+            </div>
+
+            <GlassModal
+                isOpen={showFilters}
+                onClose={() => setShowFilters(false)}
+                title="Filter Meetings"
+                footer={
+                    <>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                                setStatusFilter('ALL');
+                                setDateFilter('ALL');
+                                setShowFilters(false);
+                            }}
+                        >
+                            Reset
+                        </button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => setShowFilters(false)}
+                        >
+                            Apply Filters
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                            Status
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {['ALL', 'COMPLETED', 'PROCESSING', 'PENDING', 'FAILED'].map(status => (
+                                <button
+                                    key={status}
+                                    onClick={() => setStatusFilter(status)}
+                                    className={`btn ${statusFilter === status ? 'btn-primary' : 'btn-secondary'}`}
+                                    style={{ padding: '8px 16px', fontSize: '13px' }}
+                                >
+                                    {status === 'ALL' ? 'All Statuses' : status.charAt(0) + status.slice(1).toLowerCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                            Date Range
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <button
+                                onClick={() => setDateFilter('ALL')}
+                                className={`btn ${dateFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+                            >
+                                Anytime
+                            </button>
+                            <button
+                                onClick={() => setDateFilter('TODAY')}
+                                className={`btn ${dateFilter === 'TODAY' ? 'btn-primary' : 'btn-secondary'}`}
+                            >
+                                Last 24 Hours
+                            </button>
+                            <button
+                                onClick={() => setDateFilter('WEEK')}
+                                className={`btn ${dateFilter === 'WEEK' ? 'btn-primary' : 'btn-secondary'}`}
+                            >
+                                Last 7 Days
+                            </button>
+                            <button
+                                onClick={() => setDateFilter('MONTH')}
+                                className={`btn ${dateFilter === 'MONTH' ? 'btn-primary' : 'btn-secondary'}`}
+                            >
+                                Last 30 Days
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            )}
+            </GlassModal>
         </div>
     );
 }

@@ -78,7 +78,7 @@ const requireExtensionAccess = async (req, res, next) => {
             error: 'Feature not available',
             message: 'Real-time extension streaming requires BASIC or ULTRA subscription',
             current_tier: req.user.subscription_tier,
-            required_tiers: ['BASIC', 'ULTRA']
+            required_tiers: ['STARTER', 'PRO', 'UNLIMITED']
         });
     }
 

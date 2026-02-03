@@ -11,6 +11,7 @@ import {
     Loader2,
     RefreshCw
 } from 'lucide-react';
+import GlassModal from '../components/GlassModal';
 
 interface Reminder {
     _id: string;
@@ -172,22 +173,22 @@ export default function RemindersPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'white', margin: 0 }}>Reminders</h1>
-                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0, marginTop: '4px' }}>
+                    <h1 style={{ fontSize: '28px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>Reminders</h1>
+                    <p style={{ fontSize: '15px', color: 'var(--color-text-secondary)', margin: 0, marginTop: '4px' }}>
                         Set reminders for tasks and deadlines
                     </p>
                 </div>
-                <button onClick={() => setShowModal(true)} className="btn-primary" style={{ width: 'auto' }}>
-                    <Plus size={18} style={{ marginRight: '8px' }} /> New Reminder
+                <button onClick={() => setShowModal(true)} className="btn btn-primary btn-lg">
+                    <Plus size={18} /> New Reminder
                 </button>
             </div>
 
             {/* Reminders List */}
             {reminders.length === 0 ? (
                 <div className="dashboard-card" style={{ padding: '48px', textAlign: 'center' }}>
-                    <Bell size={48} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px' }} />
-                    <h3 style={{ fontSize: '16px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', margin: 0 }}>No reminders</h3>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: '8px 0 0' }}>Create a reminder to get started</p>
+                    <Bell size={48} style={{ color: 'var(--color-text-muted)', marginBottom: '16px', opacity: 0.5 }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: '500', color: 'var(--color-text-secondary)', margin: 0 }}>No reminders</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Create a reminder to get started</p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -196,7 +197,7 @@ export default function RemindersPage() {
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                                        <h3 style={{ fontSize: '15px', fontWeight: '500', color: 'white', margin: 0 }}>{reminder.task}</h3>
+                                        <h3 style={{ fontSize: '15px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>{reminder.task}</h3>
                                         <span style={{
                                             fontSize: '11px',
                                             padding: '2px 8px',
@@ -207,13 +208,13 @@ export default function RemindersPage() {
                                             {reminder.status}
                                         </span>
                                         {reminder.is_recurring && (
-                                            <span style={{ fontSize: '11px', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ fontSize: '11px', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <RefreshCw size={12} /> {reminder.recurrence_pattern}
                                             </span>
                                         )}
                                     </div>
-                                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: '0 0 8px' }}>{reminder.message}</p>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+                                    <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '0 0 8px' }}>{reminder.message}</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <Clock size={12} /> {formatDate(reminder.remind_at)}
                                         </span>
@@ -222,11 +223,11 @@ export default function RemindersPage() {
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     {reminder.status === 'PENDING' && (
-                                        <button onClick={() => handleCancel(reminder._id)} style={{ background: 'none', border: 'none', color: '#f59e0b', cursor: 'pointer', padding: '4px' }} title="Cancel">
+                                        <button onClick={() => handleCancel(reminder._id)} style={{ background: 'none', border: 'none', color: 'var(--color-warning)', cursor: 'pointer', padding: '4px' }} title="Cancel">
                                             <X size={16} />
                                         </button>
                                     )}
-                                    <button onClick={() => handleDelete(reminder._id)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '4px' }} title="Delete">
+                                    <button onClick={() => handleDelete(reminder._id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', padding: '4px' }} title="Delete">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -237,74 +238,72 @@ export default function RemindersPage() {
             )}
 
             {/* Create Modal */}
-            {showModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div className="dashboard-card" style={{ padding: '24px', width: '450px', maxWidth: '90vw' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: '0 0 20px' }}>
-                            <Bell size={20} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#fbbf24' }} />
-                            New Reminder
-                        </h3>
-
-                        {error && (
-                            <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                                <AlertCircle size={14} style={{ color: '#f87171', marginRight: '8px' }} />
-                                <span style={{ fontSize: '13px', color: '#f87171' }}>{error}</span>
-                            </div>
-                        )}
-
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Task *</label>
-                            <input type="text" value={task} onChange={(e) => setTask(e.target.value)} className="glass-input" placeholder="e.g., Follow up on proposal" />
+            <GlassModal
+                isOpen={showModal}
+                onClose={() => { setShowModal(false); resetForm(); }}
+                title="New Reminder"
+                footer={
+                    <>
+                        <button onClick={() => { setShowModal(false); resetForm(); }} className="btn btn-ghost">
+                            Cancel
+                        </button>
+                        <button onClick={handleCreate} className="btn btn-primary" disabled={saving}>
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <><Plus size={16} style={{ marginRight: '6px' }} /> Create</>}
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {error && (
+                        <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
+                            <AlertCircle size={14} style={{ color: 'var(--color-error)', marginRight: '8px' }} />
+                            <span style={{ fontSize: '13px', color: 'var(--color-error)' }}>{error}</span>
                         </div>
+                    )}
 
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Message *</label>
-                            <textarea value={message} onChange={(e) => setMessage(e.target.value)} className="glass-input" placeholder="Reminder message..." style={{ minHeight: '80px', resize: 'vertical' }} />
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Task *</label>
+                        <input type="text" value={task} onChange={(e) => setTask(e.target.value)} className="glass-input" placeholder="e.g., Follow up on proposal" />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Message *</label>
+                        <textarea value={message} onChange={(e) => setMessage(e.target.value)} className="glass-input" placeholder="Reminder message..." style={{ minHeight: '80px', resize: 'vertical' }} />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Remind At *</label>
+                        <input type="datetime-local" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} className="glass-input" />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Type</label>
+                            <select value={reminderType} onChange={(e) => setReminderType(e.target.value as any)} className="glass-input">
+                                <option value="EMAIL">Email</option>
+                                <option value="PUSH">Push</option>
+                                <option value="BOTH">Both</option>
+                            </select>
                         </div>
-
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Remind At *</label>
-                            <input type="datetime-local" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} className="glass-input" />
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Type</label>
-                                <select value={reminderType} onChange={(e) => setReminderType(e.target.value as any)} className="glass-input">
-                                    <option value="EMAIL">Email</option>
-                                    <option value="PUSH">Push</option>
-                                    <option value="BOTH">Both</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Recurring</label>
-                                <select value={isRecurring ? pattern : 'none'} onChange={(e) => {
-                                    if (e.target.value === 'none') {
-                                        setIsRecurring(false);
-                                    } else {
-                                        setIsRecurring(true);
-                                        setPattern(e.target.value as any);
-                                    }
-                                }} className="glass-input">
-                                    <option value="none">One-time</option>
-                                    <option value="DAILY">Daily</option>
-                                    <option value="WEEKLY">Weekly</option>
-                                    <option value="MONTHLY">Monthly</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={() => { setShowModal(false); resetForm(); }} className="btn-secondary" style={{ flex: 1 }}>
-                                Cancel
-                            </button>
-                            <button onClick={handleCreate} className="btn-primary" style={{ flex: 1 }} disabled={saving}>
-                                {saving ? <Loader2 size={16} className="animate-spin" /> : <><Plus size={16} style={{ marginRight: '6px' }} /> Create</>}
-                            </button>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Recurring</label>
+                            <select value={isRecurring ? pattern : 'none'} onChange={(e) => {
+                                if (e.target.value === 'none') {
+                                    setIsRecurring(false);
+                                } else {
+                                    setIsRecurring(true);
+                                    setPattern(e.target.value as any);
+                                }
+                            }} className="glass-input">
+                                <option value="none">One-time</option>
+                                <option value="DAILY">Daily</option>
+                                <option value="WEEKLY">Weekly</option>
+                                <option value="MONTHLY">Monthly</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            )}
+            </GlassModal>
         </div>
     );
 }

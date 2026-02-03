@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 interface SubscriptionInfo {
-    tier: 'FREE' | 'BASIC' | 'ULTRA';
+    tier: 'FREE' | 'STARTER' | 'PRO' | 'UNLIMITED';
     status: string;
     current_period_end?: string;
     cancel_at_period_end?: boolean;
@@ -34,16 +34,16 @@ const plans = [
         color: '#60a5fa',
         features: [
             '5 meetings per month',
-            '2 contracts per month',
+            '3 contracts per month',
             'Basic AI analysis',
             'Email support',
             '100MB storage'
         ],
-        limits: { meetings: 5, contracts: 2, storage: 100 }
+        limits: { meetings: 5, contracts: 3, storage: 100 }
     },
     {
-        id: 'BASIC',
-        name: 'Basic',
+        id: 'STARTER',
+        name: 'Starter',
         price: 10,
         icon: Star,
         color: '#fbbf24',
@@ -52,14 +52,15 @@ const plans = [
             '10 contracts per month',
             'Standard AI analysis',
             'Priority support',
-            '2GB storage'
+            '2GB storage',
+            'Browser extension access'
         ],
         limits: { meetings: 20, contracts: 10, storage: 2048 }
     },
     {
-        id: 'PREMIUM',
-        name: 'Premium',
-        price: 15,
+        id: 'PRO',
+        name: 'Pro',
+        price: 30,
         icon: Crown,
         color: '#f472b6',
         popular: true,
@@ -67,15 +68,16 @@ const plans = [
             '50 meetings per month',
             'Unlimited contracts',
             'Advanced AI analysis',
-            'Priority support',
-            '10GB storage'
+            'Priority processing',
+            '10GB storage',
+            'Browser extension access'
         ],
         limits: { meetings: 50, contracts: -1, storage: 10240 }
     },
     {
-        id: 'ULTRA',
-        name: 'Ultra',
-        price: 25,
+        id: 'UNLIMITED',
+        name: 'Unlimited',
+        price: 70,
         icon: Crown,
         color: '#a78bfa',
         features: [
@@ -83,7 +85,8 @@ const plans = [
             'Unlimited contracts',
             'Custom AI training',
             '24/7 dedicated support',
-            'Unlimited storage'
+            'Unlimited storage',
+            'All premium features'
         ],
         limits: { meetings: -1, contracts: -1, storage: -1 }
     }
@@ -198,7 +201,7 @@ export default function SubscriptionPage() {
                 if (data.message && !data.checkout_url) {
                     toast(data.message);
                 }
-                
+
                 if (data.checkout_url) {
                     window.location.href = data.checkout_url;
                 } else {
@@ -277,8 +280,8 @@ export default function SubscriptionPage() {
                             fontSize: '12px',
                             padding: '4px 12px',
                             borderRadius: '12px',
-                            background: (user?.subscription_tier || subscription.tier) === 'BASIC' ? 'rgba(251,191,36,0.2)' : (user?.subscription_tier || subscription.tier) === 'ULTRA' ? 'rgba(167,139,250,0.2)' : (user?.subscription_tier || subscription.tier) === 'PREMIUM' ? 'rgba(244,114,182,0.2)' : 'rgba(96,165,250,0.2)',
-                            color: (user?.subscription_tier || subscription.tier) === 'BASIC' ? '#fbbf24' : (user?.subscription_tier || subscription.tier) === 'ULTRA' ? '#a78bfa' : (user?.subscription_tier || subscription.tier) === 'PREMIUM' ? '#f472b6' : '#60a5fa'
+                            background: (user?.subscription_tier || subscription.tier) === 'STARTER' ? 'rgba(251,191,36,0.2)' : (user?.subscription_tier || subscription.tier) === 'UNLIMITED' ? 'rgba(167,139,250,0.2)' : (user?.subscription_tier || subscription.tier) === 'PRO' ? 'rgba(244,114,182,0.2)' : 'rgba(96,165,250,0.2)',
+                            color: (user?.subscription_tier || subscription.tier) === 'STARTER' ? '#fbbf24' : (user?.subscription_tier || subscription.tier) === 'UNLIMITED' ? '#a78bfa' : (user?.subscription_tier || subscription.tier) === 'PRO' ? '#f472b6' : '#60a5fa'
                         }}>
                             {user?.subscription_tier || subscription.tier} Plan
                         </span>

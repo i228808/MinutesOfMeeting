@@ -10,21 +10,21 @@ class LimitService {
             can_use_extension: false,
             priority_processing: false
         },
-        BASIC: {
+        STARTER: {
             uploads_per_month: 20,
             audio_minutes_per_month: 120,
             contracts_per_month: 10,
             can_use_extension: true,
             priority_processing: false
         },
-        PREMIUM: {
+        PRO: {
             uploads_per_month: 50,
             audio_minutes_per_month: 300,
             contracts_per_month: Infinity,
             can_use_extension: true,
             priority_processing: true
         },
-        ULTRA: {
+        UNLIMITED: {
             uploads_per_month: Infinity,
             audio_minutes_per_month: Infinity,
             contracts_per_month: Infinity,
@@ -62,7 +62,7 @@ class LimitService {
                         reason: 'Monthly upload limit reached',
                         current: user.monthly_uploads,
                         limit: limits.uploads_per_month,
-                        upgrade_prompt: user.subscription_tier !== 'ULTRA'
+                        upgrade_prompt: user.subscription_tier !== 'UNLIMITED'
                     };
                 }
                 break;
@@ -74,7 +74,7 @@ class LimitService {
                         reason: 'Monthly audio limit reached',
                         current: user.monthly_audio_minutes,
                         limit: limits.audio_minutes_per_month,
-                        upgrade_prompt: user.subscription_tier !== 'ULTRA'
+                        upgrade_prompt: user.subscription_tier !== 'UNLIMITED'
                     };
                 }
                 break;
@@ -86,7 +86,7 @@ class LimitService {
                         reason: 'Monthly contract limit reached',
                         current: user.monthly_contracts,
                         limit: limits.contracts_per_month,
-                        upgrade_prompt: user.subscription_tier !== 'ULTRA'
+                        upgrade_prompt: user.subscription_tier !== 'UNLIMITED'
                     };
                 }
                 break;
@@ -95,7 +95,7 @@ class LimitService {
                 if (!limits.can_use_extension) {
                     return {
                         allowed: false,
-                        reason: 'Extension streaming requires BASIC or ULTRA subscription',
+                        reason: 'Extension streaming requires STARTER or higher subscription',
                         upgrade_prompt: true
                     };
                 }
@@ -192,7 +192,7 @@ class LimitService {
      */
     static async getUpgradeRecommendation(userId) {
         const user = await User.findById(userId);
-        if (!user || user.subscription_tier === 'ULTRA') {
+        if (!user || user.subscription_tier === 'UNLIMITED') {
             return null;
         }
 
@@ -208,7 +208,7 @@ class LimitService {
         const highUsage = Object.entries(usagePercentage).filter(([, pct]) => pct >= 80);
 
         if (highUsage.length > 0) {
-            const recommendedTier = user.subscription_tier === 'FREE' ? 'BASIC' : 'ULTRA';
+            const recommendedTier = user.subscription_tier === 'FREE' ? 'STARTER' : 'UNLIMITED';
             return {
                 recommend_upgrade: true,
                 current_tier: user.subscription_tier,

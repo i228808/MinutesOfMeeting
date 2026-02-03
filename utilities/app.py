@@ -8,39 +8,73 @@ if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
 from flask import Flask, render_template, request, jsonify
-import whisper
+import requests
 import numpy as np
 import tempfile
 from dotenv import load_dotenv
+import subprocess
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# Load the Whisper model
-# Using "base" model for a balance of speed and accuracy. 
-# You can change this to "small", "medium", or "large" depending on your hardware.
-import torch
+# Groq API configuration
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
 
-print("Checking for CUDA...")
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-# Use 'base' for faster real-time performance (even on GPU)
-MODEL_SIZE = "base"
-
-print(f"Device: {DEVICE} | Model Size: {MODEL_SIZE}")
-if DEVICE == "cuda":
-    print(f"GPU: {torch.cuda.get_device_name(0)}")
+if not GROQ_API_KEY:
+    print("WARNING: GROQ_API_KEY not found in environment variables!")
 else:
-    print("WARNING: CUDA not found. Running on CPU (slower).")
+    print("Groq API key loaded successfully.")
 
-print(f"Loading Whisper model ({MODEL_SIZE})...")
-model = whisper.load_model(MODEL_SIZE, device=DEVICE)
-print("Whisper model loaded.")
-print("Whisper model loaded.")
 
-# Lock for thread safety
-import threading
-model_lock = threading.Lock()
+def transcribe_with_groq(audio_path):
+    """
+    Transcribe audio using Groq's Whisper Large V3 API.
+    Returns dict with 'text' and 'language' keys.
+    """
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}"
+    }
+    
+    with open(audio_path, "rb") as audio_file:
+        files = {
+            "file": (os.path.basename(audio_path), audio_file, "audio/webm")
+        }
+        data = {
+            "model": "whisper-large-v3",
+            "response_format": "verbose_json"
+        }
+        
+        response = requests.post(GROQ_API_URL, headers=headers, files=files, data=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"Groq API error: {response.status_code} - {response.text}")
+        
+        result = response.json()
+        return {
+            "text": result.get("text", ""),
+            "language": result.get("language", "unknown")
+        }
+
+
+def load_audio_for_rms(audio_path):
+    """
+    Load audio file and return numpy array for RMS calculation.
+    Uses ffmpeg to decode audio to raw PCM.
+    """
+    try:
+        cmd = [
+            "ffmpeg", "-i", audio_path,
+            "-f", "f32le", "-acodec", "pcm_f32le",
+            "-ac", "1", "-ar", "16000", "-"
+        ]
+        result = subprocess.run(cmd, capture_output=True, check=True)
+        audio = np.frombuffer(result.stdout, dtype=np.float32)
+        return audio
+    except Exception as e:
+        print(f"Error loading audio for RMS: {e}")
+        return np.array([], dtype=np.float32)
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -70,31 +104,27 @@ def transcribe():
 
         # RMS Silence Detection
         
-        # Load audio using Whisper's internal utility (supports WebM, etc.)
-        # This returns a float32 numpy array between -1 and 1
-        audio = whisper.load_audio(temp_path)
+        # Load audio using ffmpeg for RMS calculation
+        audio = load_audio_for_rms(temp_path)
         
         # Calculate RMS (Root Mean Square) amplitude
-        rms = np.sqrt(np.mean(audio**2))
-        print(f"DEBUG: Audio RMS: {rms:.6f}")
+        if len(audio) > 0:
+            rms = np.sqrt(np.mean(audio**2))
+            print(f"DEBUG: Audio RMS: {rms:.6f}")
+        else:
+            rms = 0.0
+            print("DEBUG: Could not load audio for RMS, proceeding with transcription")
 
         # Silence threshold (adjustable)
         # 0.005 is a common threshold for "near silence" in normalized audio
         SILENCE_THRESHOLD = 0.004
 
-        if rms < SILENCE_THRESHOLD:
+        if rms < SILENCE_THRESHOLD and len(audio) > 0:
             print("DEBUG: Silence detected (RMS below threshold). Skipping transcription.")
             return jsonify({'text': '', 'language': 'unknown', 'status': 'silence'}), 200
 
-        # Transcribe the audio
-        # beam_size=5 improves accuracy and language detection stability at the cost of speed
-        # fp16=False is safer for CPU usage to avoid warnings
-        # LOCKING: Whisper is not thread-safe. We must ensure only one request uses the model at a time.
-        with model_lock:
-            # fp16=True is safe and faster on CUDA, but not CPU
-            use_fp16 = (DEVICE == "cuda")
-            # beam_size=1 (greedy) is much faster and prevents queue buildup during real-time streaming
-            result = model.transcribe(audio, beam_size=1, fp16=use_fp16) 
+        # Transcribe using Groq API
+        result = transcribe_with_groq(temp_path)
         text = result['text']
         language = result['language']
         
@@ -127,8 +157,8 @@ import weaviate
 from sentence_transformers import SentenceTransformer
 
 print("Loading Embedding Model (all-MiniLM-L6-v2)...")
-# Initialize embedding model on the same device as Whisper (or CUDA if available)
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device=DEVICE)
+# Initialize embedding model (auto-detects CUDA if available)
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 print("Embedding Model Loaded.")
 
 def search_weaviate(query_text, limit=5):

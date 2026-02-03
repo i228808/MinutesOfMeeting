@@ -10,9 +10,9 @@ const { notificationService, LimitService } = require('../services');
 const getPriceId = async (tier) => {
     let id;
     // Support both naming conventions or just check the value
-    if (tier === 'BASIC') id = process.env.STRIPE_PRICE_BASIC || process.env.STRIPE_PRODUCT_BASIC;
-    else if (tier === 'PREMIUM') id = process.env.STRIPE_PRICE_PREMIUM || process.env.STRIPE_PRODUCT_PREMIUM;
-    else if (tier === 'ULTRA') id = process.env.STRIPE_PRICE_ULTRA || process.env.STRIPE_PRODUCT_ULTRA;
+    if (tier === 'STARTER') id = process.env.STRIPE_PRICE_STARTER || process.env.STRIPE_PRODUCT_STARTER;
+    else if (tier === 'PRO') id = process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRODUCT_PRO;
+    else if (tier === 'UNLIMITED') id = process.env.STRIPE_PRICE_UNLIMITED || process.env.STRIPE_PRODUCT_UNLIMITED;
 
     if (!id) throw new Error(`Configuration missing for tier: ${tier}`);
 
@@ -62,8 +62,8 @@ const getSubscriptionInfo = asyncHandler(async (req, res) => {
 const createSubscription = asyncHandler(async (req, res) => {
     const { tier } = req.body;
 
-    if (!['BASIC', 'PREMIUM', 'ULTRA'].includes(tier)) {
-        return res.status(400).json({ error: 'Invalid tier. Choose BASIC, PREMIUM, or ULTRA' });
+    if (!['STARTER', 'PRO', 'UNLIMITED'].includes(tier)) {
+        return res.status(400).json({ error: 'Invalid tier. Choose STARTER, PRO, or UNLIMITED' });
     }
 
     const priceId = await getPriceId(tier);
@@ -123,7 +123,7 @@ const createSubscription = asyncHandler(async (req, res) => {
 const changeTier = asyncHandler(async (req, res) => {
     const { tier } = req.body;
 
-    if (!['FREE', 'BASIC', 'PREMIUM', 'ULTRA'].includes(tier)) {
+    if (!['FREE', 'STARTER', 'PRO', 'UNLIMITED'].includes(tier)) {
         return res.status(400).json({ error: 'Invalid tier' });
     }
 
@@ -138,10 +138,10 @@ const changeTier = asyncHandler(async (req, res) => {
         if (subscription.stripe_subscription_id) {
             // Cancel Stripe subscription immediately (or period end depending on preference)
             // Here we cancel at period end so they keep what they paid for until it expires
-             await stripe.subscriptions.update(subscription.stripe_subscription_id, {
+            await stripe.subscriptions.update(subscription.stripe_subscription_id, {
                 cancel_at_period_end: true
             });
-            
+
             subscription.cancel_at_period_end = true;
             await subscription.save();
 
@@ -156,27 +156,27 @@ const changeTier = asyncHandler(async (req, res) => {
                 }
             });
         } else {
-             // Already free or just database record
-             subscription.tier = 'FREE';
-             subscription.status = 'ACTIVE';
-             await subscription.save();
-             
-             req.user.subscription_tier = 'FREE';
-             await req.user.save();
-             
-             return res.json({ success: true, subscription });
+            // Already free or just database record
+            subscription.tier = 'FREE';
+            subscription.status = 'ACTIVE';
+            await subscription.save();
+
+            req.user.subscription_tier = 'FREE';
+            await req.user.save();
+
+            return res.json({ success: true, subscription });
         }
     }
 
     // Always create a new Checkout Session for any paid tier change (Upgrade OR Downgrade)
     // To ensure we "go to Stripe", we use the Billing Portal for existing subscriptions.
     if (subscription.stripe_subscription_id) {
-         const portalSession = await stripe.billingPortal.sessions.create({
+        const portalSession = await stripe.billingPortal.sessions.create({
             customer: subscription.stripe_customer_id,
             return_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/subscription`,
-         });
-         
-         return res.json({ checkout_url: portalSession.url });
+        });
+
+        return res.json({ checkout_url: portalSession.url });
     } else {
         // No active Stripe subscription, standard checkout
         return createSubscription(req, res);
@@ -279,8 +279,8 @@ const handleStripeWebhook = async (req, res) => {
 
     try {
         if (!process.env.STRIPE_WEBHOOK_SECRET) {
-             console.error('Missing STRIPE_WEBHOOK_SECRET');
-             return res.status(500).send('Webhook Secret Missing');
+            console.error('Missing STRIPE_WEBHOOK_SECRET');
+            return res.status(500).send('Webhook Secret Missing');
         }
         event = stripe.webhooks.constructEvent(
             req.body,

@@ -6,17 +6,18 @@ import {
     FileSignature,
     Calendar,
     Bell,
-    Settings,
     LogOut,
     Upload,
     Mic,
-    ChevronRight,
-    CreditCard
+    CreditCard,
+    Sparkles
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: ReactNode;
 }
+
+const BRAND = 'Brevity';
 
 const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -39,142 +40,172 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         window.location.href = '/';
     };
 
+    // Get tier color
+    const getTierColor = (tier: string) => {
+        switch (tier) {
+            case 'STARTER': return 'var(--color-primary)';
+            case 'PRO': return '#FFAA5C';
+            case 'UNLIMITED': return '#6BE3D0';
+            default: return 'var(--color-text-muted)';
+        }
+    };
+
     return (
-        <div className="grain-overlay" style={{ display: 'flex', width: '100vw', height: '100vh', background: '#0c0c0f' }}>
+        <div className="bg-noise" style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--color-bg-base)' }}>
             {/* Sidebar */}
-            <aside className="sidebar" style={{ width: '260px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <aside className="sidebar" style={{ width: '280px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '24px 0' }}>
                 {/* Logo */}
-                <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src="/logo.svg" alt="Logo" style={{ width: '32px', height: '32px' }} />
-                    <div style={{ lineHeight: 1 }}>
-                        <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: 'white', margin: 0 }}>
-                            <span style={{ color: '#fbbf24' }}>Meeting</span>Minutes
-                        </h1>
-                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', letterSpacing: '0.5px' }}>
-                            AI-POWERED AUTOMATION
-                        </p>
+                <div style={{ padding: '0 24px 32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, var(--color-primary) 0%, #FF9A7A 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(255, 107, 74, 0.25)'
+                        }}>
+                            <Sparkles size={22} color="#030303" strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                                {BRAND}
+                            </h1>
+                            <p className="text-label" style={{ fontSize: '10px', marginTop: '4px' }}>
+                                Meeting Intelligence
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Quick Actions */}
-                <div style={{ padding: '16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ padding: '0 24px 24px', borderBottom: '1px solid var(--color-border-subtle)', marginBottom: '24px' }}>
                     <Link
                         to="/dashboard/upload"
-                        className="btn-primary"
-                        style={{ marginBottom: '8px', textDecoration: 'none', fontSize: '13px', padding: '10px 16px' }}
+                        className="btn btn-primary"
+                        style={{ width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(255, 107, 74, 0.2)' }}
                     >
-                        <Upload size={16} style={{ marginRight: '8px' }} />
+                        <Upload size={18} />
                         Upload Meeting
                     </Link>
-
-                    {/* Live Recorder Button - Only for paid tiers */}
-                    {['BASIC', 'PREMIUM', 'ULTRA'].includes(user.subscription_tier || 'FREE') && (
-                        <button
-                            onClick={() => alert("To use Live Recording:\n1. Open Chrome Extensions\n2. Load Unpacked -> select 'extension' folder\n3. Click 'Start Recording' in the popup!")}
-                            style={{
-                                width: '100%',
-                                fontSize: '13px',
-                                padding: '10px 16px',
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', // Emerald/Green for Action
-                                border: 'none',
-                                borderRadius: '8px',
-                                color: 'white',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.2s',
-                                boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                        >
-                            <Mic size={16} style={{ marginRight: '8px' }} />
-                            Install Live Recorder
-                        </button>
-                    )}
                 </div>
 
                 {/* Navigation */}
-                <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
-                    {navItems.map((item) => {
-                        const isActive = location.pathname === item.path ||
-                            (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
-                        const Icon = item.icon;
+                <nav style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
+                    <p className="text-label" style={{ padding: '0 12px 12px', opacity: 0.6 }}>Main Menu</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {navItems.map((item) => {
+                            const isActive = location.pathname === item.path ||
+                                (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                            const Icon = item.icon;
 
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`nav-item ${isActive ? 'active' : ''}`}
-                                style={{ position: 'relative', textDecoration: 'none' }}
-                            >
-                                <Icon size={18} style={{ marginRight: '12px' }} />
-                                {item.label}
-                                {isActive && (
-                                    <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
-                                )}
-                            </Link>
-                        );
-                    })}
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className={`nav-item ${isActive ? 'active' : ''}`}
+                                    style={{
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        fontSize: '14px',
+                                        fontWeight: isActive ? 600 : 500
+                                    }}
+                                >
+                                    <Icon size={20} style={{ opacity: isActive ? 1 : 0.7 }} />
+                                    {item.label}
+                                    {isActive && (
+                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', marginLeft: 'auto' }} />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
                 </nav>
 
                 {/* User Section */}
-                <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <Link
-                        to="/dashboard/settings"
-                        className="nav-item"
-                        style={{ marginBottom: '8px', textDecoration: 'none' }}
-                    >
-                        <Settings size={18} style={{ marginRight: '12px' }} />
-                        Settings
-                    </Link>
+                <div style={{ padding: '24px', borderTop: '1px solid var(--color-border-subtle)' }}>
+                    {['STARTER', 'PRO', 'UNLIMITED'].includes(user.subscription_tier || 'FREE') && (
+                        <button
+                            onClick={() => alert("To use Live Recording:\n1. Open Chrome Extensions\n2. Load Unpacked -> select 'extension' folder\n3. Click 'Start Recording' in the popup!")}
+                            className="btn btn-secondary"
+                            style={{
+                                width: '100%',
+                                marginBottom: '16px',
+                                justifyContent: 'center',
+                                fontSize: '13px',
+                                borderColor: 'var(--color-secondary-muted)',
+                                color: 'var(--color-secondary)'
+                            }}
+                        >
+                            <Mic size={16} />
+                            Get Live Recorder
+                        </button>
+                    )}
 
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         padding: '12px',
                         background: 'rgba(255,255,255,0.03)',
-                        borderRadius: '10px',
-                        marginTop: '8px'
-                    }}>
+                        borderRadius: '16px',
+                        border: '1px solid var(--color-border-subtle)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                        onClick={() => window.location.href = '/dashboard/settings'}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-border-default)'}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border-subtle)'}
+                    >
                         <div style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '8px',
-                            background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '10px',
+                            background: 'linear-gradient(135deg, var(--color-bg-surface) 0%, var(--color-bg-elevated) 100%)',
+                            border: '1px solid var(--color-border-subtle)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            color: 'white',
+                            fontSize: '15px',
+                            fontWeight: '700',
+                            color: 'var(--color-text-secondary)',
                             marginRight: '12px'
                         }}>
                             {user.name?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: '13px', fontWeight: '500', color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {user.name}
                             </p>
-                            <Link to="/dashboard/subscription" style={{ fontSize: '11px', color: '#fbbf24', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{
+                                fontSize: '11px',
+                                color: getTierColor(user.subscription_tier || 'FREE'),
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                marginTop: '2px'
+                            }}>
                                 <CreditCard size={10} /> {user.subscription_tier || 'FREE'} Plan
-                            </Link>
+                            </div>
                         </div>
                         <button
-                            onClick={handleLogout}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleLogout();
+                            }}
                             style={{
                                 background: 'none',
                                 border: 'none',
-                                color: 'rgba(255,255,255,0.4)',
+                                color: 'var(--color-text-muted)',
+                                padding: '8px',
+                                borderRadius: '8px',
                                 cursor: 'pointer',
-                                padding: '4px',
-                                display: 'flex'
+                                transition: 'color 0.2s'
                             }}
-                            title="Logout"
                         >
-                            <LogOut size={16} />
+                            <LogOut size={18} />
                         </button>
                     </div>
                 </div>
@@ -183,11 +214,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Main Content */}
             <main style={{
                 flex: 1,
-                overflow: 'auto',
-                background: 'linear-gradient(135deg, #0c0c0f 0%, #0f0f14 100%)'
+                overflow: 'hidden',
+                position: 'relative',
+                background: 'var(--color-bg-base)'
             }}>
-                {children}
+                <div style={{
+                    height: '100%',
+                    overflowY: 'auto',
+                    background: 'radial-gradient(circle at 50% 0%, rgba(255, 107, 74, 0.03) 0%, transparent 50%)'
+                }}>
+                    {children}
+                </div>
             </main>
         </div>
     );
 }
+
