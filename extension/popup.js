@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         teamSelect: document.getElementById('team-select')
     };
 
-    const SERVER_URL = 'http://localhost:5000';
+    const SERVER_URL = 'https://api.minutemaker.tech';
     let socket = null;
     let timerInterval = null;
     let startTime = null;
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         setLoading(loginInputs.btn, true);
         try {
-            const res = await fetch(`${SERVER_URL}/api/auth/login`, {
+            const res = await fetch(`${SERVER_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchTeams(authToken) {
         try {
-            const res = await fetch(`${SERVER_URL}/api/teams`, {
+            const res = await fetch(`${SERVER_URL}/teams`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
             const data = await res.json();

@@ -1,5 +1,5 @@
 // content.js
-// Runs on http://localhost:5173/*
+// Runs on https://www.minutemaker.tech/*
 
 function syncToken() {
     const token = localStorage.getItem('token');

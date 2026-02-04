@@ -113,7 +113,11 @@ app.use('/api/teams', teamRoutes);
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+    res.status(404).json({
+        error: 'Route not found',
+        debug_path: req.originalUrl,
+        debug_method: req.method
+    });
 });
 
 // Global error handler
