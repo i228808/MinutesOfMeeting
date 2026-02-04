@@ -105,155 +105,161 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <BodyClassController />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+        <Suspense fallback={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0A0A0C' }}>
+            <Loader2 size={32} color="#FF6B4A" className="animate-spin" />
+          </div>
+        }>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* Static pages */}
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookies" element={<CookiesPage />} />
-          <Route path="/gdpr" element={<GDPRPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/docs" element={<DocsPage />} />
-          <Route path="/help" element={<HelpPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/careers" element={<CareersPage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
-          <Route path="/status" element={<StatusPage />} />
-          <Route path="/changelog" element={<ChangelogPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/press" element={<PressPage />} />
+            {/* Static pages */}
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
+            <Route path="/gdpr" element={<GDPRPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/docs" element={<DocsPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+            <Route path="/status" element={<StatusPage />} />
+            <Route path="/changelog" element={<ChangelogPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/press" element={<PressPage />} />
 
-          {/* Protected dashboard routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <DashboardOverview />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/meetings"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <MeetingsPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/meetings/:id"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <MeetingDetailPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/upload"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <UploadPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/contracts"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <ContractsPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/contracts/:id"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <ContractEditorPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/calendar"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <CalendarPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/reminders"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <RemindersPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/settings"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <SettingsPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/subscription"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <SubscriptionPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/teams"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <TeamsPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/teams/:id"
-            element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <TeamDetailPage />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
+            {/* Protected dashboard routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <DashboardOverview />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/meetings"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <MeetingsPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/meetings/:id"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <MeetingDetailPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/upload"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <UploadPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/contracts"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <ContractsPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/contracts/:id"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <ContractEditorPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/calendar"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <CalendarPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/reminders"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <RemindersPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/settings"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <SettingsPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/subscription"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <SubscriptionPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/teams"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <TeamsPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/teams/:id"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <TeamDetailPage />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
 
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Catch-all redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
         <Toaster theme="dark" position="top-right" />
       </BrowserRouter>
     </ThemeProvider>
