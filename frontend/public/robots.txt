@@ -1,4 +1,31 @@
+# Robots.txt for Minute Maker
+# https://www.minutemaker.tech
+
 User-agent: *
 Allow: /
+Disallow: /dashboard/
+Disallow: /auth/
 
 Sitemap: https://www.minutemaker.tech/sitemap.xml
+
+# LLMs.txt for AI crawlers
+# See: https://www.minutemaker.tech/llms.txt
+
+# Explicitly allow AI crawlers for GEO (Generative Engine Optimization)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Perplexity
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /

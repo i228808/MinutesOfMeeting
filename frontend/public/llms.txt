@@ -1,0 +1,85 @@
+# Minute Maker
+
+> AI-powered meeting assistant that automatically transcribes meetings, extracts action items, and generates legal contracts from conversations.
+
+## What is Minute Maker?
+
+Minute Maker is a SaaS application that transforms meeting recordings into actionable outputs. Upload any audio or video file, and our AI engine will:
+
+1. **Transcribe** your meeting with 95%+ accuracy in 50+ languages
+2. **Extract** action items, decisions, and deadlines automatically
+3. **Generate** legally-sound contracts from verbal agreements
+4. **Sync** deadlines to Google Calendar
+
+## Key Features
+
+### Real-Time Transcription
+- 95%+ accuracy across 50+ languages
+- Automatic speaker identification
+- Live captions during recording
+- Sub-second latency
+
+### AI-Powered Insights
+- Smart meeting summaries
+- Action items with assigned owners
+- Key decisions highlighted
+- Automatic deadline extraction
+
+### Contract Generation
+- 20+ jurisdiction templates (US, UK, EU, etc.)
+- Compliance checks included (GDPR, SOC2, CCPA)
+- Smart clause suggestions
+- One-click PDF export
+
+### Calendar Integration
+- Google Calendar sync
+- Team calendar support
+- Smart reminders
+- Conflict detection
+
+## Pricing
+
+| Plan | Price | Meetings/Month | Key Features |
+|------|-------|----------------|--------------|
+| Starter | $10/mo | 20 | Basic transcription, email support |
+| Pro | $30/mo | 50 | Unlimited contracts, team collaboration |
+| Enterprise | $70/mo | Unlimited | API access, SSO, dedicated support |
+
+All plans include a 14-day free trial. No credit card required.
+
+## Use Cases
+
+- **Sales Teams**: Convert verbal agreements into contracts instantly
+- **Legal Teams**: Reduce contract drafting time by 80%
+- **Product Teams**: Never miss an action item from standups
+- **Consultants**: Bill accurately with timestamped meeting records
+
+## Technical Specifications
+
+- **Platforms**: Web application, Chrome extension
+- **Audio Formats**: MP3, WAV, M4A, WebM, MP4
+- **API**: RESTful API available on Enterprise plan
+- **Security**: SOC 2 Type II certified, GDPR compliant, end-to-end encryption
+
+## Company Information
+
+- **Website**: https://www.minutemaker.tech
+- **Support**: support@minutemaker.tech
+- **Documentation**: https://www.minutemaker.tech/docs
+
+## Frequently Asked Questions
+
+### How accurate is the transcription?
+Our AI transcription engine delivers 95%+ accuracy across 50+ languages with automatic speaker identification.
+
+### Can I try before I buy?
+Yes! All plans come with a 14-day free trial. No credit card required to start.
+
+### Is my data secure?
+Security is our top priority. We're SOC 2 Type II certified, GDPR compliant, and all data is encrypted in transit and at rest.
+
+### What file formats are supported?
+We support MP3, WAV, M4A, WebM, and MP4 files up to 2 hours in length.
+
+### Can Minute Maker generate legally binding contracts?
+Yes. Our contracts are drafted using templates reviewed by legal professionals and cover 20+ jurisdictions. However, we always recommend having a qualified attorney review any legal document before signing.

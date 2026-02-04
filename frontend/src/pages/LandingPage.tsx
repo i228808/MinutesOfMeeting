@@ -237,31 +237,119 @@ export default function LandingPage() {
         return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
     }, [isAnimating]);
 
+    // Enhanced Schema.org markup for SEO and GEO (LLM optimization)
     const structuredData = {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Minute Maker",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web, Chrome Extension",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-        },
-        "description": "AI-powered meeting assistant that records, transcribes, and generates contracts from your calls automatically.",
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "ratingCount": "1250"
-        }
+        "@graph": [
+            {
+                "@type": "SoftwareApplication",
+                "@id": "https://www.minutemaker.tech/#software",
+                "name": "Minute Maker",
+                "url": "https://www.minutemaker.tech",
+                "applicationCategory": "BusinessApplication",
+                "operatingSystem": "Web, Chrome Extension",
+                "offers": {
+                    "@type": "AggregateOffer",
+                    "lowPrice": "0",
+                    "highPrice": "70",
+                    "priceCurrency": "USD",
+                    "offerCount": "3"
+                },
+                "description": "AI-powered meeting assistant that automatically transcribes meetings, extracts action items, and generates legal contracts from voice conversations.",
+                "featureList": [
+                    "AI Meeting Transcription with 95%+ accuracy",
+                    "Automatic Action Item Extraction",
+                    "Legal Contract Generation",
+                    "Google Calendar Sync",
+                    "50+ Language Support",
+                    "Speaker Identification"
+                ],
+                "screenshot": "https://www.minutemaker.tech/screenshot.jpg",
+                "aggregateRating": {
+                    "@type": "AggregateRating",
+                    "ratingValue": "4.8",
+                    "ratingCount": "1250",
+                    "bestRating": "5",
+                    "worstRating": "1"
+                }
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://www.minutemaker.tech/#organization",
+                "name": "Minute Maker",
+                "url": "https://www.minutemaker.tech",
+                "logo": "https://www.minutemaker.tech/logo.svg",
+                "description": "AI-powered meeting assistant for modern teams",
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "email": "support@minutemaker.tech",
+                    "contactType": "customer support"
+                },
+                "sameAs": [
+                    "https://twitter.com/minutemaker",
+                    "https://linkedin.com/company/minutemaker",
+                    "https://github.com/minutemaker"
+                ]
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://www.minutemaker.tech/#website",
+                "url": "https://www.minutemaker.tech",
+                "name": "Minute Maker",
+                "publisher": { "@id": "https://www.minutemaker.tech/#organization" },
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://www.minutemaker.tech/search?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                }
+            },
+            {
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "What is Minute Maker?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Minute Maker is an AI-powered meeting assistant that automatically transcribes meetings, extracts action items, and generates legal contracts from voice conversations."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How accurate is Minute Maker's transcription?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Our AI transcription engine delivers 95%+ accuracy across 50+ languages with automatic speaker identification."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Can Minute Maker generate legally binding contracts?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes. Minute Maker generates contracts using templates reviewed by legal professionals covering 20+ jurisdictions. We recommend having a qualified attorney review any legal document before signing."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Is there a free trial?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes! All plans come with a 14-day free trial. No credit card required to start."
+                        }
+                    }
+                ]
+            }
+        ]
     };
 
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
             <Helmet>
-                <title>Minute Maker | AI Meeting Notes & Contract Generator</title>
-                <meta name="description" content="Stop taking notes. Start closing deals. Minute Maker records your meetings, extracts action items, and instantly generates legal contracts from your conversations." />
-                <meta name="keywords" content="AI meeting notes, contract generator, meeting to contract, automated minutes, legal automation, voice to text" />
+                <title>AI Meeting Notes & Contract Generator | Minute Maker</title>
+                <meta name="description" content="Stop taking notes. Start closing deals. Minute Maker is an AI meeting assistant that records, transcribes, extracts action items, and instantly generates legal contracts from your conversations." />
+                <meta name="keywords" content="AI meeting notes, AI meeting assistant, contract generator, meeting to contract, automated minutes, legal automation, voice to text, meeting transcription, action item extraction" />
+                <link rel="canonical" href="https://www.minutemaker.tech/" />
 
                 {/* Open Graph / Facebook */}
                 <meta property="og:type" content="website" />
@@ -324,7 +412,23 @@ export default function LandingPage() {
                         Now with live transcription
                     </div>
 
+                    {/* PRIMARY H1 - Keyword Rich for SEO */}
                     <h1 style={{
+                        position: 'absolute',
+                        width: '1px',
+                        height: '1px',
+                        padding: '0',
+                        margin: '-1px',
+                        overflow: 'hidden',
+                        clip: 'rect(0, 0, 0, 0)',
+                        whiteSpace: 'nowrap',
+                        border: '0'
+                    }}>
+                        AI Meeting Notes & Contract Generator - Minute Maker
+                    </h1>
+
+                    {/* Visual Headline (H2) */}
+                    <h2 style={{
                         fontSize: 'clamp(44px, 7vw, 68px)',
                         fontWeight: '800',
                         lineHeight: 1.1,
@@ -337,7 +441,7 @@ export default function LandingPage() {
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent'
                         }}>on autopilot</span>
-                    </h1>
+                    </h2>
                     <p style={{ fontSize: '20px', color: '#A1A1A6', marginBottom: '32px', lineHeight: 1.6, maxWidth: '580px', margin: '0 auto 32px' }}>
                         Upload any meeting recording and get transcripts, action items, contracts, and calendar events — automatically.
                     </p>
@@ -498,9 +602,9 @@ export default function LandingPage() {
                                     </span>
                                 </div>
 
-                                <h2 style={{ fontSize: '36px', fontWeight: '700', marginBottom: '16px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+                                <h3 style={{ fontSize: '36px', fontWeight: '700', marginBottom: '16px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
                                     {section.headline}
-                                </h2>
+                                </h3>
                                 <p style={{ fontSize: '16px', color: '#A1A1A6', marginBottom: '32px', lineHeight: 1.7 }}>
                                     {section.description}
                                 </p>
