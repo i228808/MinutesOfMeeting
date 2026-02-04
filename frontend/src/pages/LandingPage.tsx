@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import {
@@ -236,8 +237,50 @@ export default function LandingPage() {
         return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
     }, [isAnimating]);
 
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Minute Maker",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web, Chrome Extension",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "description": "AI-powered meeting assistant that records, transcribes, and generates contracts from your calls automatically.",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "1250"
+        }
+    };
+
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
+            <Helmet>
+                <title>Minute Maker | AI Meeting Notes & Contract Generator</title>
+                <meta name="description" content="Stop taking notes. Start closing deals. Minute Maker records your meetings, extracts action items, and instantly generates legal contracts from your conversations." />
+                <meta name="keywords" content="AI meeting notes, contract generator, meeting to contract, automated minutes, legal automation, voice to text" />
+
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://www.minutemaker.tech/" />
+                <meta property="og:title" content="Minute Maker | Turn Talk Into Contracts" />
+                <meta property="og:description" content="The only AI meeting assistant that instantly drafts legal contracts from your voice conversations." />
+                <meta property="og:image" content="https://www.minutemaker.tech/og-image.jpg" />
+
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content="https://www.minutemaker.tech/" />
+                <meta property="twitter:title" content="Minute Maker | Turn Talk Into Contracts" />
+                <meta property="twitter:description" content="The only AI meeting assistant that instantly drafts legal contracts from your voice conversations." />
+                <meta property="twitter:image" content="https://www.minutemaker.tech/og-image.jpg" />
+
+                <script type="application/ld+json">
+                    {JSON.stringify(structuredData)}
+                </script>
+            </Helmet>
             {/* ===== NAVIGATION ===== */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,

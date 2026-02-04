@@ -1,39 +1,42 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { API_URL } from './config';
+// Eager load Landing Page for LCP
 import LandingPage from './pages/LandingPage';
-import AuthPage from './pages/AuthPage';
-import DashboardLayout from './layouts/DashboardLayout';
-import DashboardOverview from './pages/DashboardOverview';
-import MeetingsPage from './pages/MeetingsPage';
-import MeetingDetailPage from './pages/MeetingDetailPage';
-import UploadPage from './pages/UploadPage';
-import CalendarPage from './pages/CalendarPage';
-import ContractsPage from './pages/ContractsPage';
-import ContractEditorPage from './pages/ContractEditorPage';
-import RemindersPage from './pages/RemindersPage';
-import SettingsPage from './pages/SettingsPage';
-import SubscriptionPage from './pages/SubscriptionPage';
-import PrivacyPage from './pages/PrivacyPage';
-import TermsPage from './pages/TermsPage';
-import CookiesPage from './pages/CookiesPage';
-import GDPRPage from './pages/GDPRPage';
-import AboutPage from './pages/AboutPage';
-import FeaturesPage from './pages/FeaturesPage';
-import PricingPage from './pages/PricingPage';
-import DocsPage from './pages/DocsPage';
-import HelpPage from './pages/HelpPage';
-import BlogPage from './pages/BlogPage';
-import CareersPage from './pages/CareersPage';
-import IntegrationsPage from './pages/IntegrationsPage';
-import StatusPage from './pages/StatusPage';
-import ChangelogPage from './pages/ChangelogPage';
-import ContactPage from './pages/ContactPage';
-import TeamsPage from './pages/TeamsPage';
-import TeamDetailPage from './pages/TeamDetailPage';
 
-import PressPage from './pages/PressPage';
+// Lazy load other pages for Performance (Code Splitting)
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
+const DashboardOverview = lazy(() => import('./pages/DashboardOverview'));
+const MeetingsPage = lazy(() => import('./pages/MeetingsPage'));
+const MeetingDetailPage = lazy(() => import('./pages/MeetingDetailPage'));
+const UploadPage = lazy(() => import('./pages/UploadPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const ContractsPage = lazy(() => import('./pages/ContractsPage'));
+const ContractEditorPage = lazy(() => import('./pages/ContractEditorPage'));
+const RemindersPage = lazy(() => import('./pages/RemindersPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const CookiesPage = lazy(() => import('./pages/CookiesPage'));
+const GDPRPage = lazy(() => import('./pages/GDPRPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const DocsPage = lazy(() => import('./pages/DocsPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const CareersPage = lazy(() => import('./pages/CareersPage'));
+const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
+const StatusPage = lazy(() => import('./pages/StatusPage'));
+const ChangelogPage = lazy(() => import('./pages/ChangelogPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const TeamsPage = lazy(() => import('./pages/TeamsPage'));
+const TeamDetailPage = lazy(() => import('./pages/TeamDetailPage'));
+const PressPage = lazy(() => import('./pages/PressPage'));
 
 // Body class controller for proper scrolling behavior
 function BodyClassController() {

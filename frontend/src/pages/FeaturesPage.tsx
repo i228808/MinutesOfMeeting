@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import {
     Sparkles,
     Mic,
@@ -131,6 +132,10 @@ const featureSections = [
 export default function FeaturesPage() {
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
+            <Helmet>
+                <title>Features | Minute Maker - Transcription, AI Insights & Contracts</title>
+                <meta name="description" content="Explore Minute Maker's features: 95% accurate transcription, AI action item extraction, automated contract drafting, and Google Calendar sync." />
+            </Helmet>
             {/* Nav */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,

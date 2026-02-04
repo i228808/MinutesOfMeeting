@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft } from 'lucide-react';
 import Footer from '../components/Footer';
 
@@ -14,6 +15,10 @@ interface StaticPageLayoutProps {
 export default function StaticPageLayout({ title, subtitle, children, lastUpdated }: StaticPageLayoutProps) {
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
+            <Helmet>
+                <title>{title} | Minute Maker</title>
+                <meta name="description" content={`${title} for Minute Maker - The AI meeting assistant that generates contracts.`} />
+            </Helmet>
             {/* Nav */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Sparkles, Check, ArrowRight, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -91,6 +92,10 @@ export default function PricingPage() {
 
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
+            <Helmet>
+                <title>Pricing | Minute Maker - Start Free, Upgrade for Power</title>
+                <meta name="description" content="Simple, transparent pricing. Start for free with 5 meetings/month. Upgrade to Pro for unlimited contracts and advanced AI analysis." />
+            </Helmet>
             {/* Nav */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
