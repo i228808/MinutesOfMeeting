@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
-    Sparkles,
     Mic,
     Brain,
     FileSignature,
@@ -17,7 +17,9 @@ import {
     Shield,
     FileText,
     Settings,
-    MessageSquare
+    MessageSquare,
+    Menu,
+    X
 } from 'lucide-react';
 import Footer from '../components/Footer';
 
@@ -130,6 +132,8 @@ const featureSections = [
 ];
 
 export default function FeaturesPage() {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
             <Helmet>
@@ -145,31 +149,51 @@ export default function FeaturesPage() {
                 <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
                         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
                             <span style={{ fontSize: '22px', fontWeight: '800' }}>{BRAND}</span>
                         </Link>
-                        <div style={{ display: 'flex', gap: '28px' }}>
+                        <div className="desktop-nav" style={{ display: 'flex', gap: '28px' }}>
                             <Link to="/features" style={{ fontSize: '14px', color: '#FF6B4A', fontWeight: '600' }}>Features</Link>
                             <Link to="/pricing" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Pricing</Link>
                             <Link to="/docs" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Docs</Link>
                             <Link to="/about" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>About</Link>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Link to="/login" style={{ padding: '10px 18px', color: '#A1A1A6', fontWeight: '600', fontSize: '14px' }}>Log in</Link>
-                        <Link to="/login" style={{
-                            padding: '10px 20px', background: '#FF6B4A', borderRadius: '8px',
-                            fontWeight: '600', fontSize: '14px', color: '#030303'
-                        }}>Get Started</Link>
+                        <Link to="/login" style={{ padding: '10px 20px', background: '#FF6B4A', borderRadius: '8px', fontWeight: '600', fontSize: '14px', color: '#030303' }}>Get Started</Link>
                     </div>
+                    <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+                        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
             </nav>
+
+            {/* Mobile Navigation Drawer */}
+            {mobileMenuOpen && (
+                <div className="mobile-sidebar active" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-sidebar-content" onClick={(e) => e.stopPropagation()}>
+                        <div style={{ padding: '0 24px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
+                                <span style={{ fontSize: '20px', fontWeight: '800' }}>{BRAND}</span>
+                            </Link>
+                        </div>
+                        <nav style={{ padding: '24px 16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <Link to="/features" className="nav-item active" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+                                <Link to="/pricing" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+                                <Link to="/docs" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
+                                <Link to="/about" className="nav-item" onClick={() => setMobileMenuOpen(false)}>About</Link>
+                            </div>
+                        </nav>
+                        <div style={{ padding: '24px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Link to="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '12px' }} onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                            <Link to="/login" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>Log in</Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hero */}
             <section style={{ paddingTop: '160px', paddingBottom: '60px', textAlign: 'center' }}>

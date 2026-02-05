@@ -172,7 +172,7 @@ export default function DashboardOverview() {
     }
 
     return (
-        <div style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }} className="animate-fadeIn">
+        <div className="page-container animate-fadeIn">
             {/* Header */}
             <div className="flex-between" style={{ marginBottom: '40px' }}>
                 <div>
@@ -183,14 +183,15 @@ export default function DashboardOverview() {
                         Here's your meeting intelligence overview.
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                    <Link to="/dashboard/calendar" className="btn btn-secondary">
+                <div className="mobile-stack" style={{ display: 'flex', gap: '16px' }}>
+                    <Link to="/dashboard/calendar" className="btn btn-secondary hide-mobile">
                         <Calendar size={18} />
                         View Calendar
                     </Link>
                     <Link to="/dashboard/upload" className="btn btn-primary">
                         <Upload size={18} />
-                        Upload Meeting
+                        <span className="hide-mobile">Upload Meeting</span>
+                        <span className="mobile-only">Upload</span>
                     </Link>
                 </div>
             </div>
@@ -285,7 +286,7 @@ export default function DashboardOverview() {
             </div>
 
             {/* Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '7fr 3fr', gap: '32px' }}>
+            <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '7fr 3fr', gap: '32px' }}>
                 {/* Recent Meetings */}
                 <div className="animate-fadeInUp delay-200">
                     <div className="flex-between" style={{ marginBottom: '20px' }}>

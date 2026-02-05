@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
 
 const BRAND = 'Minute Maker';
 
@@ -26,6 +25,7 @@ const footerLinks = {
     legal: [
         { label: 'Privacy Policy', href: '/privacy' },
         { label: 'Terms of Service', href: '/terms' },
+        { label: 'Refund Policy', href: '/refund' },
         { label: 'Cookie Policy', href: '/cookies' },
         { label: 'GDPR', href: '/gdpr' }
     ]
@@ -39,13 +39,7 @@ export default function Footer() {
                     {/* Brand column */}
                     <div style={{ gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                            <div style={{
-                                width: '32px', height: '32px', borderRadius: '8px',
-                                background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Sparkles size={16} color="#030303" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.svg" alt="Minute Maker" style={{ width: '32px', height: '32px' }} />
                             <span style={{ fontSize: '18px', fontWeight: '700', color: '#F5F5F7' }}>{BRAND}</span>
                         </div>
                         <p style={{ fontSize: '14px', color: '#6B6B70', lineHeight: 1.6, maxWidth: '260px' }}>

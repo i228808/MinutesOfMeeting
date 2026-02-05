@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LoginForm } from "@/components/ui/login-form";
 import { RegisterForm } from "@/components/ui/register-form";
 import { OTPForm } from "@/components/ui/otp-form";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { API_URL } from '../config';
 const BRAND = 'Minute Maker';
@@ -167,14 +167,7 @@ export default function AuthPage() {
                 {/* Brand Header */}
                 <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                     <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '24px', textDecoration: 'none' }}>
-                        <div style={{
-                            width: '40px', height: '40px', borderRadius: '10px',
-                            background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 8px 16px rgba(255, 107, 74, 0.2)'
-                        }}>
-                            <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                        </div>
+                        <img src="/logo.svg" alt="Minute Maker" style={{ width: '40px', height: '40px' }} />
                         <span style={{ fontSize: '24px', fontWeight: '800', color: '#F5F5F7', letterSpacing: '-0.02em' }}>{BRAND}</span>
                     </Link>
                     <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#F5F5F7', marginBottom: '8px', letterSpacing: '-0.02em' }}>

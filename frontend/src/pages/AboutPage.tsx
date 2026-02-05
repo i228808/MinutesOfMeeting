@@ -1,15 +1,15 @@
 import { Link } from 'react-router-dom';
 import {
-    Sparkles,
-    Users,
     Target,
     Heart,
     Zap,
     ArrowRight,
     Globe,
     Shield,
-    Award
+    Award,
+    Users
 } from 'lucide-react';
+import Footer from '../components/Footer';
 
 const BRAND = 'Minute Maker';
 
@@ -37,17 +37,10 @@ const values = [
 ];
 
 const stats = [
-    { value: '50K+', label: 'Active users' },
-    { value: '2M+', label: 'Meetings processed' },
+    { value: '50+', label: 'Languages supported' },
     { value: '99.9%', label: 'Uptime SLA' },
-    { value: '50+', label: 'Languages supported' }
-];
-
-const team = [
-    { name: 'Sarah Chen', role: 'CEO & Co-founder', image: null },
-    { name: 'Mike Johnson', role: 'CTO & Co-founder', image: null },
-    { name: 'Lisa Park', role: 'VP Engineering', image: null },
-    { name: 'David Wong', role: 'VP Product', image: null }
+    { value: '<1s', label: 'Processing latency' },
+    { value: '256-bit', label: 'Encryption' }
 ];
 
 export default function AboutPage() {
@@ -62,13 +55,7 @@ export default function AboutPage() {
                 <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
                         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
                             <span style={{ fontSize: '22px', fontWeight: '800' }}>{BRAND}</span>
                         </Link>
                         <div style={{ display: 'flex', gap: '28px' }}>
@@ -135,9 +122,7 @@ export default function AboutPage() {
                         </div>
                         <div style={{ background: '#111114', borderRadius: '16px', padding: '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Sparkles size={24} color="#030303" />
-                                </div>
+                                <img src="/logo.svg" alt="Minute Maker" style={{ width: '48px', height: '48px' }} />
                                 <div>
                                     <p style={{ fontWeight: '600', fontSize: '16px' }}>{BRAND}</p>
                                     <p style={{ fontSize: '13px', color: '#6B6B70' }}>Founded 2024 • San Francisco</p>
@@ -196,29 +181,79 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Team */}
+            {/* Vision */}
             <section style={{ padding: '100px 24px' }}>
                 <div style={{ maxWidth: '900px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-                        <p style={{ fontSize: '13px', color: '#FF6B4A', fontWeight: '600', letterSpacing: '0.1em', marginBottom: '12px' }}>OUR TEAM</p>
-                        <h2 style={{ fontSize: '36px', fontWeight: '700', letterSpacing: '-0.02em' }}>Meet the people behind {BRAND}</h2>
+                        <p style={{ fontSize: '13px', color: '#FF6B4A', fontWeight: '600', letterSpacing: '0.1em', marginBottom: '12px' }}>OUR VISION</p>
+                        <h2 style={{ fontSize: '36px', fontWeight: '700', letterSpacing: '-0.02em', marginBottom: '24px' }}>The future of meetings</h2>
+                        <p style={{ fontSize: '18px', color: '#A1A1A6', lineHeight: 1.8, maxWidth: '700px', margin: '0 auto' }}>
+                            We envision a world where meetings are productive by default. Where every conversation
+                            leads to clear action, every agreement becomes a documented commitment, and no insight
+                            is ever lost.
+                        </p>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
-                        {team.map((member) => (
-                            <div key={member.name} style={{ textAlign: 'center' }}>
-                                <div style={{
-                                    width: '120px', height: '120px', borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-                                    margin: '0 auto 16px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '1px solid rgba(255,255,255,0.1)'
-                                }}>
-                                    <Users size={40} color="#6B6B70" />
-                                </div>
-                                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>{member.name}</h3>
-                                <p style={{ fontSize: '13px', color: '#6B6B70' }}>{member.role}</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                        <div style={{
+                            background: '#111114',
+                            borderRadius: '16px',
+                            padding: '28px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '12px',
+                                background: 'rgba(255, 107, 74, 0.15)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 20px'
+                            }}>
+                                <Zap size={24} color="#FF6B4A" />
                             </div>
-                        ))}
+                            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px' }}>Real-time Intelligence</h3>
+                            <p style={{ fontSize: '14px', color: '#A1A1A6', lineHeight: 1.7 }}>
+                                AI that works at the speed of conversation, providing insights as they happen.
+                            </p>
+                        </div>
+                        <div style={{
+                            background: '#111114',
+                            borderRadius: '16px',
+                            padding: '28px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '12px',
+                                background: 'rgba(74, 227, 181, 0.15)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 20px'
+                            }}>
+                                <Globe size={24} color="#4AE3B5" />
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px' }}>Universal Accessibility</h3>
+                            <p style={{ fontSize: '14px', color: '#A1A1A6', lineHeight: 1.7 }}>
+                                Breaking language barriers with 50+ language support and real-time translation.
+                            </p>
+                        </div>
+                        <div style={{
+                            background: '#111114',
+                            borderRadius: '16px',
+                            padding: '28px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '12px',
+                                background: 'rgba(92, 157, 255, 0.15)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 20px'
+                            }}>
+                                <Shield size={24} color="#5C9DFF" />
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px' }}>Privacy First</h3>
+                            <p style={{ fontSize: '14px', color: '#A1A1A6', lineHeight: 1.7 }}>
+                                Your data stays yours. No sharing, no selling, complete user control.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -250,10 +285,7 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer style={{ padding: '40px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
-                <p style={{ fontSize: '13px', color: '#6B6B70' }}>© 2025 {BRAND}. All rights reserved.</p>
-            </footer>
+            <Footer />
         </div>
     );
 }

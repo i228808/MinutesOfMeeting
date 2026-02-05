@@ -11,7 +11,9 @@ import {
     Upload,
     Mic,
     CreditCard,
-    Users
+    Users,
+    Menu,
+    X
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -35,6 +37,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : { name: 'User', email: 'user@example.com' };
     const [showBrowserModal, setShowBrowserModal] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -54,7 +57,106 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <div className="bg-noise" style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--color-bg-base)' }}>
-            {/* Sidebar */}
+            {/* Mobile Header */}
+            <header className="mobile-nav" style={{ display: 'none', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, padding: '12px 16px', background: 'var(--color-bg-deep)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img src="/logo.svg" alt="Minute Maker" style={{ width: '32px', height: '32px' }} />
+                        <span style={{ fontSize: '18px', fontWeight: '800' }}>{BRAND}</span>
+                    </div>
+                    <button
+                        className="mobile-menu-toggle"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        style={{ display: 'flex' }}
+                        aria-label="Toggle menu"
+                    >
+                        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
+                </div>
+            </header>
+
+            {/* Mobile Sidebar Drawer */}
+            {mobileMenuOpen && (
+                <div className="mobile-sidebar active" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-sidebar-content" onClick={(e) => e.stopPropagation()}>
+                        <div style={{ padding: '0 24px 24px', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <img src="/logo.svg" alt="Minute Maker" style={{ width: '40px', height: '40px' }} />
+                                <div>
+                                    <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                                        {BRAND}
+                                    </h1>
+                                    <p className="text-label" style={{ fontSize: '10px', marginTop: '4px' }}>
+                                        Meeting Intelligence
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '16px 24px 24px', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                            <Link
+                                to="/dashboard/upload"
+                                className="btn btn-primary"
+                                style={{ width: '100%', justifyContent: 'center' }}
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <Upload size={18} />
+                                Upload Meeting
+                            </Link>
+                        </div>
+
+                        <nav style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+                            <p className="text-label" style={{ padding: '0 12px 12px', opacity: 0.6 }}>Main Menu</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {navItems.map((item) => {
+                                    const isActive = location.pathname === item.path ||
+                                        (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                                    const Icon = item.icon;
+                                    return (
+                                        <Link
+                                            key={item.path}
+                                            to={item.path}
+                                            className={`nav-item ${isActive ? 'active' : ''}`}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <Icon size={20} />
+                                            {item.label}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </nav>
+
+                        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border-subtle)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                <div style={{
+                                    width: '40px', height: '40px', borderRadius: '10px',
+                                    background: 'var(--color-bg-surface)', display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center', fontWeight: '700'
+                                }}>
+                                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontSize: '14px', fontWeight: '600' }}>{user.name}</p>
+                                    <p style={{ fontSize: '11px', color: getTierColor(user.subscription_tier || 'FREE') }}>
+                                        {user.subscription_tier || 'FREE'} Plan
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="btn btn-secondary"
+                                style={{ width: '100%', justifyContent: 'center' }}
+                            >
+                                <LogOut size={16} />
+                                Log out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sidebar - Desktop only */}
             <aside className="sidebar" style={{ width: '280px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '24px 0' }}>
                 {/* Logo */}
                 <div style={{ padding: '0 24px 32px' }}>
@@ -203,11 +305,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </aside>
 
             {/* Main Content */}
-            <main style={{
+            <main className="main-content" style={{
                 flex: 1,
                 overflow: 'hidden',
                 position: 'relative',
-                background: 'var(--color-bg-base)'
+                background: 'var(--color-bg-base)',
+                paddingTop: '0' /* Mobile will add padding via CSS */
             }}>
                 <div style={{
                     height: '100%',

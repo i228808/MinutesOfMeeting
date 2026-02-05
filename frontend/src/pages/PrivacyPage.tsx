@@ -71,22 +71,28 @@ export default function PrivacyPage() {
             <div style={legalStyles.section}>
                 <h2 style={legalStyles.heading}>4. Data Retention</h2>
                 <p style={legalStyles.paragraph}>
-                    We retain your meeting data for as long as your account is active. Audio recordings are
-                    automatically deleted 30 days after processing unless you choose to retain them. You can
-                    request deletion of your data at any time through your account settings.
+                    We retain your meeting data for as long as your account is active. Your data remains available
+                    until you choose to delete specific meetings or your account. When you delete meeting content,
+                    it is permanently removed from our systems. You can delete your data at any time through
+                    your account settings or by contacting us.
                 </p>
             </div>
 
             <div style={legalStyles.section}>
                 <h2 style={legalStyles.heading}>5. Third-Party Services</h2>
                 <p style={legalStyles.paragraph}>
-                    We use trusted third-party services to help provide our service:
+                    We use trusted third-party services to help provide our service. Your data is only shared
+                    with these providers as necessary to deliver our services:
                 </p>
                 <ul style={legalStyles.list}>
+                    <li style={legalStyles.listItem}><strong>OpenAI Whisper API</strong> — Audio transcription</li>
+                    <li style={legalStyles.listItem}><strong>Google AI (Gemini)</strong> — Meeting analysis and insights</li>
                     <li style={legalStyles.listItem}><strong>Stripe</strong> — Payment processing</li>
-                    <li style={legalStyles.listItem}><strong>Google Cloud</strong> — Infrastructure and AI services</li>
-                    <li style={legalStyles.listItem}><strong>Groq</strong> — AI model inference</li>
                 </ul>
+                <p style={legalStyles.paragraph}>
+                    We do not sell, share, or provide your data to any third parties for marketing or other purposes.
+                    Your meeting content is processed solely to provide you with transcription and analysis features.
+                </p>
             </div>
 
             <div style={legalStyles.section}>
@@ -109,8 +115,7 @@ export default function PrivacyPage() {
                     If you have questions about this Privacy Policy, please contact us at:
                 </p>
                 <p style={legalStyles.paragraph}>
-                    <strong>Email:</strong> privacy@minutemaker.com<br />
-                    <strong>Address:</strong> 123 Innovation Drive, San Francisco, CA 94105
+                    <strong>Email:</strong> administrator@minutemaker.tech
                 </p>
             </div>
         </StaticPageLayout>

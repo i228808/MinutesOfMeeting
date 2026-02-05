@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Sparkles, Check, ArrowRight, HelpCircle } from 'lucide-react';
+import { Check, ArrowRight, HelpCircle, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import Footer from '../components/Footer';
 
 const BRAND = 'Minute Maker';
 
 const pricingTiers = [
     {
         name: 'Starter',
-        price: { monthly: 10, annual: 8 },
+        price: 10,
         description: 'For individuals getting started',
         features: [
             '20 meetings per month',
@@ -17,17 +18,12 @@ const pricingTiers = [
             'Email support',
             'Basic analytics'
         ],
-        limitations: [
-            'No team collaboration',
-            'No API access',
-            'No custom templates'
-        ],
-        cta: 'Start free trial',
+        cta: 'Get Started',
         popular: false
     },
     {
         name: 'Pro',
-        price: { monthly: 30, annual: 24 },
+        price: 30,
         description: 'For teams and power users',
         features: [
             '50 meetings per month',
@@ -36,59 +32,54 @@ const pricingTiers = [
             'Priority support',
             'Custom templates',
             'Team collaboration',
-            'Advanced analytics',
-            'Slack integration'
+            'Advanced analytics'
         ],
-        limitations: [],
-        cta: 'Start free trial',
+        cta: 'Get Started',
         popular: true
     },
     {
-        name: 'Enterprise',
-        price: { monthly: 70, annual: 56 },
-        description: 'For organizations at scale',
+        name: 'Unlimited',
+        price: 70,
+        description: 'For power users who need it all',
         features: [
             'Unlimited meetings',
             'Unlimited audio',
             'Unlimited contracts',
             'API access',
-            'SSO & SAML',
-            '24/7 dedicated support',
+            '24/7 priority support',
             'Custom integrations',
-            'SLA guarantee',
-            'Dedicated account manager'
+            'Advanced export options'
         ],
-        limitations: [],
-        cta: 'Contact sales',
+        cta: 'Get Started',
         popular: false
     }
 ];
 
 const faqs = [
     {
-        question: 'Can I try before I buy?',
-        answer: 'Yes! All plans come with a 14-day free trial. No credit card required to start.'
+        question: 'What is your refund policy?',
+        answer: 'We offer a 7-day refund policy. If you\'re not satisfied, contact us within 7 days of purchase for a full refund.'
     },
     {
         question: 'What happens if I exceed my limits?',
-        answer: 'We\'ll notify you when you\'re approaching your limits. You can upgrade at any time, or we\'ll roll over unused capacity to the next month.'
+        answer: 'We\'ll notify you when you\'re approaching your limits. You can upgrade to a higher tier at any time.'
     },
     {
         question: 'Can I cancel anytime?',
         answer: 'Absolutely. Cancel anytime from your account settings. If you cancel, you\'ll retain access until the end of your billing period.'
     },
     {
-        question: 'Do you offer discounts for nonprofits?',
-        answer: 'Yes, we offer 50% off for registered nonprofits and educational institutions. Contact our sales team to learn more.'
+        question: 'How does billing work?',
+        answer: 'All plans are billed monthly. Your subscription renews automatically each month until you cancel.'
     },
     {
         question: 'Is my data secure?',
-        answer: 'Security is our top priority. We\'re SOC 2 Type II certified, GDPR compliant, and all data is encrypted in transit and at rest.'
+        answer: 'Security is our top priority. All data is encrypted in transit and at rest. We never share your data with third parties.'
     }
 ];
 
 export default function PricingPage() {
-    const [isAnnual, setIsAnnual] = useState(true);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
         <div style={{ background: '#0A0A0C', minHeight: '100vh', color: '#F5F5F7', overflowY: 'auto', overflowX: 'hidden' }}>
@@ -105,31 +96,54 @@ export default function PricingPage() {
                 <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
                         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
                             <span style={{ fontSize: '22px', fontWeight: '800' }}>{BRAND}</span>
                         </Link>
-                        <div style={{ display: 'flex', gap: '28px' }}>
+                        <div className="desktop-nav" style={{ display: 'flex', gap: '28px' }}>
                             <Link to="/features" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Features</Link>
                             <Link to="/pricing" style={{ fontSize: '14px', color: '#FF6B4A', fontWeight: '600' }}>Pricing</Link>
                             <Link to="/docs" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Docs</Link>
                             <Link to="/about" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>About</Link>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Link to="/login" style={{ padding: '10px 18px', color: '#A1A1A6', fontWeight: '600', fontSize: '14px' }}>Log in</Link>
                         <Link to="/login" style={{
                             padding: '10px 20px', background: '#FF6B4A', borderRadius: '8px',
                             fontWeight: '600', fontSize: '14px', color: '#030303'
                         }}>Get Started</Link>
                     </div>
+                    <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+                        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
             </nav>
+
+            {/* Mobile Navigation Drawer */}
+            {mobileMenuOpen && (
+                <div className="mobile-sidebar active" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-sidebar-content" onClick={(e) => e.stopPropagation()}>
+                        <div style={{ padding: '0 24px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
+                                <span style={{ fontSize: '20px', fontWeight: '800' }}>{BRAND}</span>
+                            </Link>
+                        </div>
+                        <nav style={{ padding: '24px 16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <Link to="/features" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+                                <Link to="/pricing" className="nav-item active" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+                                <Link to="/docs" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
+                                <Link to="/about" className="nav-item" onClick={() => setMobileMenuOpen(false)}>About</Link>
+                            </div>
+                        </nav>
+                        <div style={{ padding: '24px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Link to="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '12px' }} onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                            <Link to="/login" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>Log in</Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hero */}
             <section style={{ paddingTop: '160px', paddingBottom: '40px', textAlign: 'center' }}>
@@ -138,41 +152,15 @@ export default function PricingPage() {
                         Simple, transparent pricing
                     </h1>
                     <p style={{ fontSize: '20px', color: '#A1A1A6', marginBottom: '32px' }}>
-                        Start free. Upgrade when you need more. No surprises.
+                        Start with Starter. Upgrade when you need more. Monthly billing only.
                     </p>
-
-                    {/* Toggle */}
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '4px', background: '#111114', borderRadius: '10px' }}>
-                        <button
-                            onClick={() => setIsAnnual(false)}
-                            style={{
-                                padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                                background: !isAnnual ? '#FF6B4A' : 'transparent',
-                                color: !isAnnual ? '#030303' : '#A1A1A6',
-                                fontWeight: '600', fontSize: '14px'
-                            }}
-                        >
-                            Monthly
-                        </button>
-                        <button
-                            onClick={() => setIsAnnual(true)}
-                            style={{
-                                padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                                background: isAnnual ? '#FF6B4A' : 'transparent',
-                                color: isAnnual ? '#030303' : '#A1A1A6',
-                                fontWeight: '600', fontSize: '14px'
-                            }}
-                        >
-                            Annual <span style={{ fontSize: '12px', opacity: 0.8 }}>(-20%)</span>
-                        </button>
-                    </div>
                 </div>
             </section>
 
             {/* Pricing Cards */}
-            <section style={{ padding: '40px 24px 100px' }}>
+            <section className="landing-section" style={{ paddingTop: '40px', paddingBottom: '100px' }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                    <div className="grid-3-cols">
                         {pricingTiers.map(tier => (
                             <div key={tier.name} style={{
                                 background: tier.popular ? '#18181C' : '#111114',
@@ -194,14 +182,9 @@ export default function PricingPage() {
 
                                 <div style={{ marginBottom: '28px' }}>
                                     <span style={{ fontSize: '48px', fontWeight: '800' }}>
-                                        ${isAnnual ? tier.price.annual : tier.price.monthly}
+                                        ${tier.price}
                                     </span>
-                                    <span style={{ color: '#6B6B70', fontSize: '15px' }}>/mo</span>
-                                    {isAnnual && (
-                                        <p style={{ fontSize: '13px', color: '#4AE3B5', marginTop: '4px' }}>
-                                            Billed annually (${(isAnnual ? tier.price.annual : tier.price.monthly) * 12}/year)
-                                        </p>
-                                    )}
+                                    <span style={{ color: '#6B6B70', fontSize: '15px' }}>/month</span>
                                 </div>
 
                                 <ul style={{ listStyle: 'none', marginBottom: '28px' }}>
@@ -227,9 +210,9 @@ export default function PricingPage() {
             </section>
 
             {/* FAQs */}
-            <section style={{ padding: '80px 24px', background: '#0f0f12' }}>
+            <section className="landing-section" style={{ background: '#0f0f12' }}>
                 <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-                    <h2 style={{ fontSize: '32px', fontWeight: '700', textAlign: 'center', marginBottom: '48px' }}>
+                    <h2 className="text-display-md" style={{ fontWeight: '700', textAlign: 'center', marginBottom: '48px' }}>
                         Frequently asked questions
                     </h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -262,7 +245,7 @@ export default function PricingPage() {
                     <p style={{ fontSize: '18px', color: '#A1A1A6', marginBottom: '32px' }}>
                         Our team is happy to help you find the right plan.
                     </p>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+                    <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
                         <Link to="/contact" style={{
                             padding: '14px 28px', background: '#FF6B4A', borderRadius: '10px',
                             fontWeight: '600', fontSize: '15px', color: '#030303',
@@ -280,10 +263,7 @@ export default function PricingPage() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer style={{ padding: '40px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
-                <p style={{ fontSize: '13px', color: '#6B6B70' }}>© 2025 {BRAND}. All rights reserved.</p>
-            </footer>
+            <Footer />
         </div>
     );
 }

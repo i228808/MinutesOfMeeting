@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, Calendar, Slack, Video, Database, ArrowRight } from 'lucide-react';
+import { Calendar, Slack, Video, Database, ArrowRight } from 'lucide-react';
 
 const BRAND = 'Minute Maker';
 
@@ -20,9 +20,7 @@ export default function IntegrationsPage() {
             }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #FF6B4A, #FF9A7A)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Sparkles size={20} color="#030303" strokeWidth={2.5} />
-                        </div>
+                        <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
                         <span style={{ fontSize: '22px', fontWeight: '800' }}>{BRAND}</span>
                     </Link>
                     <Link to="/login" style={{ padding: '10px 20px', background: '#FF6B4A', borderRadius: '8px', fontWeight: '600', fontSize: '14px', color: '#030303' }}>Get Started</Link>

@@ -22,7 +22,9 @@ import {
     MessageSquare,
     FileText,
     Settings,
-    ArrowUpRight
+    ArrowUpRight,
+    Menu,
+    X
 } from 'lucide-react';
 
 const BRAND = 'Minute Maker';
@@ -225,6 +227,7 @@ const companyLogos = ['Stripe', 'Notion', 'Linear', 'Vercel', 'Figma', 'GitHub']
 export default function LandingPage() {
     const [activeStep, setActiveStep] = useState(0);
     const [isAnimating, setIsAnimating] = useState(true);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Auto-animate through steps
@@ -381,22 +384,76 @@ export default function LandingPage() {
                             <img src="/logo.svg" alt="Minute Maker" style={{ width: '40px', height: '40px' }} />
                             <span style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.02em' }}>{BRAND}</span>
                         </Link>
-                        <div style={{ display: 'flex', gap: '28px' }}>
+                        <div className="desktop-nav" style={{ display: 'flex', gap: '28px' }}>
                             <Link to="/features" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Features</Link>
                             <Link to="/pricing" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Pricing</Link>
                             <Link to="/docs" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>Docs</Link>
                             <Link to="/about" style={{ fontSize: '14px', color: '#A1A1A6', fontWeight: '500' }}>About</Link>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Link to="/login" style={{ padding: '10px 18px', color: '#A1A1A6', fontWeight: '600', fontSize: '14px' }}>Log in</Link>
                         <Link to="/login" style={{
                             padding: '10px 20px', background: '#FF6B4A', borderRadius: '8px',
                             fontWeight: '600', fontSize: '14px', color: '#030303', boxShadow: '0 0 20px rgba(255, 107, 74, 0.3)'
                         }}>Get Started Free</Link>
                     </div>
+                    {/* Mobile menu toggle */}
+                    <button
+                        className="mobile-menu-toggle"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-label="Toggle menu"
+                    >
+                        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
             </nav>
+
+            {/* Mobile Navigation Drawer */}
+            {mobileMenuOpen && (
+                <div
+                    className="mobile-sidebar active"
+                    onClick={() => setMobileMenuOpen(false)}
+                >
+                    <div
+                        className="mobile-sidebar-content"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ padding: '0 24px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => setMobileMenuOpen(false)}>
+                                <img src="/logo.svg" alt="Minute Maker" style={{ width: '36px', height: '36px' }} />
+                                <span style={{ fontSize: '20px', fontWeight: '800' }}>{BRAND}</span>
+                            </Link>
+                        </div>
+                        <nav style={{ padding: '24px 16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <Link to="/features" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+                                <Link to="/pricing" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+                                <Link to="/docs" className="nav-item" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
+                                <Link to="/about" className="nav-item" onClick={() => setMobileMenuOpen(false)}>About</Link>
+                            </div>
+                        </nav>
+                        <div style={{ padding: '24px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 'auto' }}>
+                            <Link
+                                to="/login"
+                                className="btn btn-primary"
+                                style={{ width: '100%', justifyContent: 'center', marginBottom: '12px' }}
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Get Started Free
+                            </Link>
+                            <Link
+                                to="/login"
+                                className="btn btn-secondary"
+                                style={{ width: '100%', justifyContent: 'center' }}
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Log in
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ===== HERO ===== */}
             <section style={{ paddingTop: '160px', paddingBottom: '60px', textAlign: 'center' }}>
@@ -469,13 +526,14 @@ export default function LandingPage() {
             </section>
 
             {/* ===== HOW IT WORKS - ANIMATED FLOW CARDS ===== */}
-            <section style={{ padding: '40px 24px 80px' }}>
+            <section className="landing-section" style={{ paddingTop: '40px', paddingBottom: '80px' }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                     <p style={{ textAlign: 'center', fontSize: '12px', color: '#6B6B70', marginBottom: '32px', letterSpacing: '0.15em', fontWeight: '600' }}>
                         HOW IT WORKS
                     </p>
 
                     <div
+                        className="mobile-stack"
                         style={{ display: 'flex', gap: '12px', alignItems: 'stretch' }}
                         onMouseEnter={() => setIsAnimating(false)}
                         onMouseLeave={() => setIsAnimating(true)}
@@ -578,7 +636,7 @@ export default function LandingPage() {
                             background: sectionIndex % 2 === 0 ? '#0A0A0C' : '#0f0f12'
                         }}
                     >
-                        <div style={{
+                        <div className="mobile-stack" style={{
                             maxWidth: '1100px',
                             margin: '0 auto',
                             display: 'grid',
@@ -610,7 +668,7 @@ export default function LandingPage() {
                                 </p>
 
                                 {/* Feature list */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                                <div className="grid-2-cols" style={{ marginBottom: '32px' }}>
                                     {section.features.map((feature, i) => {
                                         const FeatureIcon = feature.icon;
                                         return (
@@ -667,7 +725,7 @@ export default function LandingPage() {
                                                 <p style={{ fontSize: '11px', color: '#6B6B70', fontWeight: '600', letterSpacing: '0.05em', marginBottom: '8px' }}>MEETING SUMMARY</p>
                                                 <p style={{ fontSize: '14px', color: '#F5F5F7', lineHeight: 1.6 }}>{(section.mockup.content as { summary: string }).summary}</p>
                                             </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                                            <div className="grid-2-cols" style={{ marginBottom: '20px' }}>
                                                 <div style={{ padding: '14px', background: 'rgba(255,107,74,0.1)', borderRadius: '10px' }}>
                                                     <p style={{ fontSize: '28px', fontWeight: '800', color: '#FF6B4A' }}>{(section.mockup.content as { actions: unknown[] }).actions.length}</p>
                                                     <p style={{ fontSize: '12px', color: '#6B6B70' }}>Action items</p>
@@ -743,12 +801,12 @@ export default function LandingPage() {
             })}
 
             {/* ===== TESTIMONIALS ===== */}
-            <section style={{ padding: '100px 24px', background: '#0A0A0C' }}>
+            <section className="landing-section" style={{ background: '#0A0A0C' }}>
                 <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-                    <h2 style={{ fontSize: '36px', fontWeight: '700', textAlign: 'center', marginBottom: '60px' }}>
+                    <h2 className="text-display-md" style={{ fontWeight: '700', textAlign: 'center', marginBottom: '60px' }}>
                         Loved by teams everywhere
                     </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                    <div className="grid-3-cols">
                         {testimonials.map((t, i) => (
                             <div key={i} style={{
                                 background: '#111114',
@@ -773,15 +831,15 @@ export default function LandingPage() {
             </section>
 
             {/* ===== PRICING ===== */}
-            <section style={{ padding: '100px 24px', background: '#0f0f12' }}>
+            <section className="landing-section" style={{ background: '#0f0f12' }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <h2 style={{ fontSize: '36px', fontWeight: '700', textAlign: 'center', marginBottom: '12px' }}>
+                    <h2 className="text-display-md" style={{ fontWeight: '700', textAlign: 'center', marginBottom: '12px' }}>
                         Simple, transparent pricing
                     </h2>
-                    <p style={{ fontSize: '17px', color: '#A1A1A6', textAlign: 'center', marginBottom: '60px' }}>
+                    <p className="text-body-lg" style={{ textAlign: 'center', marginBottom: '60px' }}>
                         Start free. Upgrade when you need more.
                     </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                    <div className="grid-3-cols">
                         {pricingTiers.map(tier => (
                             <div key={tier.name} style={{
                                 background: tier.popular ? '#18181C' : '#111114',

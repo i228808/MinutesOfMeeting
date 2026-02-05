@@ -66,11 +66,16 @@ export default function TermsPage() {
             </div>
 
             <div style={legalStyles.section}>
-                <h2 style={legalStyles.heading}>5. Payment and Billing</h2>
+                <h2 style={legalStyles.heading}>5. Payment, Billing, and Refunds</h2>
                 <p style={legalStyles.paragraph}>
                     For paid plans, you agree to pay all fees according to the pricing and billing terms presented
                     at the time of purchase. Subscription fees are billed in advance on a monthly or annual basis.
-                    All payments are non-refundable except as required by law.
+                </p>
+                <p style={legalStyles.paragraph}>
+                    <strong>7-Day Refund Policy:</strong> If you are not satisfied with {BRAND}, you may request a
+                    full refund within 7 days of your initial purchase or subscription renewal. Refunds will be
+                    processed to your original payment method within 5-10 business days. To request a refund,
+                    contact us at administrator@minutemaker.tech.
                 </p>
             </div>
 
@@ -125,8 +130,7 @@ export default function TermsPage() {
                     For questions about these Terms, please contact us at:
                 </p>
                 <p style={legalStyles.paragraph}>
-                    <strong>Email:</strong> legal@minutemaker.com<br />
-                    <strong>Address:</strong> 123 Innovation Drive, San Francisco, CA 94105
+                    <strong>Email:</strong> administrator@minutemaker.tech
                 </p>
             </div>
         </StaticPageLayout>

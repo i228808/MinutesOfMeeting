@@ -37,6 +37,7 @@ const ContactPage = lazy(() => import('./pages/ContactPage'));
 const TeamsPage = lazy(() => import('./pages/TeamsPage'));
 const TeamDetailPage = lazy(() => import('./pages/TeamDetailPage'));
 const PressPage = lazy(() => import('./pages/PressPage'));
+const RefundPage = lazy(() => import('./pages/RefundPage'));
 
 // Body class controller for proper scrolling behavior
 function BodyClassController() {
@@ -120,6 +121,7 @@ function App() {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/cookies" element={<CookiesPage />} />
+            <Route path="/refund" element={<RefundPage />} />
             <Route path="/gdpr" element={<GDPRPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/features" element={<FeaturesPage />} />
