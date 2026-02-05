@@ -3,6 +3,7 @@
 
 User-agent: *
 Allow: /
+Allow: /favicon.svg
 Disallow: /dashboard/
 Disallow: /auth/
 

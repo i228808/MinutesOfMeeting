@@ -61,8 +61,8 @@ async function startRecording(params) {
         mediaStream = destination.stream;
 
         // 3. Start Session with Backend
-        // Route: /api/realtime/stream/start
-        const startRes = await fetch(`${serverUrl}/api/realtime/stream/start`, {
+        // Route: ""/realtime/stream/start
+        const startRes = await fetch(`${serverUrl}/realtime/stream/start`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ async function stopRecording() {
     // End Session on Backend
     if (sessionId && data) {
         try {
-            await fetch(`${data.serverUrl}/api/realtime/stream/end`, {
+            await fetch(`${data.serverUrl}/realtime/stream/end`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ async function uploadChunk(blob, token, serverUrl) {
         formData.append('audio', blob);
         formData.append('session_id', sessionId);
 
-        await fetch(`${serverUrl}/api/realtime/stream/chunk`, {
+        await fetch(`${serverUrl}/realtime/stream/chunk`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
