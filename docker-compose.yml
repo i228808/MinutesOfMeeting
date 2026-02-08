@@ -1,34 +1,25 @@
 version: '3.8'
 
 services:
-  # --- UI Layer ---
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:5000
-    depends_on:
-      - backend
 
   # --- API Layer ---
   backend:
     build: ./backend
+    restart: always
     ports:
       - "5000:5000"
     volumes:
       - ./backend:/app
       - /app/node_modules
+    env_file:
+      - ./backend/.env
     environment:
-      - PORT=5000
-      - MONGO_URI=mongodb://mongo:27017/meeting-assistant
+      # Networking Overrides
+      - MONGODB_URI=mongodb://mongo:27017/meeting-assistant
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - CLIENT_URL=http://localhost:5173
-      # Add other ENV vars here or use env_file
+      - CLIENT_URL=https://www.minutemaker.tech
+      - STT_SERVICE_URL=http://utilities:5001
     depends_on:
       - mongo
       - redis
@@ -37,11 +28,14 @@ services:
   # --- AI/Utility Layer ---
   utilities:
     build: ./utilities
+    restart: always
     ports:
       - "5001:5001"
     volumes:
       - ./utilities:/app
       - ./RAG_DATA:/app/RAG_DATA # Mount data for processing
+    env_file:
+      - ./utilities/.env
     environment:
       - FLASK_ENV=development
     # GPU requirements removed for standard Droplet deployment
@@ -49,16 +43,16 @@ services:
   # --- Data Layer ---
   mongo:
     image: mongo:latest
-    ports:
-      - "27017:27017"
+    restart: always
+    # Removed public port - only accessible within Docker network
     volumes:
       - mongo_data:/data/db
 
   redis:
     image: redis:alpine
+    restart: always
     command: redis-server --appendonly yes
-    ports:
-      - "6379:6379"
+    # Removed public port - only accessible within Docker network
     volumes:
       - redis_data:/data
 
@@ -71,9 +65,8 @@ services:
       - --scheme
       - http
     image: semitechnologies/weaviate:1.24.1
-    ports:
-      - 8081:8081
-      - 50052:50052
+    restart: always
+    # Removed public ports - only accessible within Docker network
     volumes:
       - weaviate_data:/var/lib/weaviate
     environment:

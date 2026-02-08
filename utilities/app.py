@@ -261,10 +261,10 @@ def query_rag():
     return jsonify({'results': results})
 
 # --- New Endpoint for Continuous Learning ---
-from utilities.text_cleaner import clean_contract_text
-from utilities.contract_parser import parse_contract
-from utilities.chunker import create_hierarchical_chunks
-from utilities.weaviate_manager import batch_insert_chunks
+from text_cleaner import clean_contract_text
+from contract_parser import parse_contract
+from chunker import create_hierarchical_chunks
+from weaviate_manager import batch_insert_chunks
 
 @app.route('/process_contracts', methods=['POST'])
 def process_contracts():
@@ -327,5 +327,5 @@ def process_contracts():
 
 if __name__ == '__main__':
     # Run on port 5001 to avoid conflict with Express backend (port 5000)
-    app.run(debug=True, use_reloader=False, port=5001)
+    app.run(host='0.0.0.0', debug=True, use_reloader=False, port=5001)
 

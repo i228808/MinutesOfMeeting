@@ -9,8 +9,8 @@ class NotificationService {
     this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
     this.sender = {
-      email: 'abdullahmansoor04@gmail.com',
-      name: 'Meeting Minutes AI'
+      email: 'noreply@minutemaker.tech',
+      name: 'Minute Maker'
     };
   }
 

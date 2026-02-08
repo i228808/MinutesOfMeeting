@@ -52,6 +52,8 @@ class AudioService {
 
             const result = response.data;
 
+            console.log('STT Response received:', JSON.stringify(result).substring(0, 500));
+
             // Estimate duration from file size
             const estimatedDuration = this.getAudioDuration(filePath);
 

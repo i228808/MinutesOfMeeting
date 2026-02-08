@@ -33,14 +33,22 @@ require('./cron/cleanup')();
 
 const app = express();
 
+// Trust proxy - required when behind Nginx/Cloudflare
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "same-site" }
+    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // CORS configuration
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: [
+        process.env.CLIENT_URL,
+        'http://localhost:5173',
+        'https://minutemaker.tech',
+        'https://www.minutemaker.tech'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

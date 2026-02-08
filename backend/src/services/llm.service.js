@@ -133,29 +133,45 @@ Important:
 - Return ONLY valid JSON, no markdown formatting or code blocks`;
 
         try {
-            const text = await this.makeRequest([
+            let text = await this.makeRequest([
                 { role: 'user', content: prompt }
             ]);
 
-            // Parse JSON from response
+            // Strip <think>...</think> blocks from reasoning models
+            text = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+
+            // Strip markdown code fences if present
+            text = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
+
+            // Log for debugging (first 500 chars)
+            console.log('[LLM] Response preview:', text.substring(0, 500));
+
+            // Parse JSON from response - find the outermost complete JSON object
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                const analysis = JSON.parse(jsonMatch[0]);
+                try {
+                    const analysis = JSON.parse(jsonMatch[0]);
 
-                // Calculate if contract is detected (3+ elements present)
-                const elements = analysis.contract_elements || {};
-                const elementCount = [
-                    elements.has_offer,
-                    elements.has_service,
-                    elements.has_payment,
-                    elements.has_schedule
-                ].filter(Boolean).length;
+                    // Calculate if contract is detected (2+ elements present)
+                    const elements = analysis.contract_elements || {};
+                    const elementCount = [
+                        elements.has_offer,
+                        elements.has_service,
+                        elements.has_payment,
+                        elements.has_schedule
+                    ].filter(Boolean).length;
 
-                analysis.contract_detected = elementCount >= 2;
+                    analysis.contract_detected = elementCount >= 2;
 
-                return analysis;
+                    return analysis;
+                } catch (parseError) {
+                    console.error('[LLM] JSON parse error:', parseError.message);
+                    console.error('[LLM] Raw response:', text);
+                    throw new Error('Failed to parse LLM response as JSON');
+                }
             }
 
+            console.error('[LLM] No JSON found in response:', text);
             throw new Error('Failed to parse LLM response as JSON');
         } catch (error) {
             console.error('LLM Analysis Error:', error);
