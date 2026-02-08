@@ -186,7 +186,7 @@ export default function SubscriptionPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/subscriptions/change`, {
+            const res = await fetch(`${API_URL}/subscriptions/create`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -198,14 +198,10 @@ export default function SubscriptionPage() {
             const data = await res.json();
 
             if (res.ok) {
-                if (data.message && !data.checkout_url) {
-                    toast(data.message);
-                }
-
                 if (data.checkout_url) {
                     window.location.href = data.checkout_url;
                 } else {
-                    fetchData();
+                    toast.error('Failed to start checkout');
                 }
             } else {
                 setError(data.error || 'Failed to change plan');
@@ -225,8 +221,8 @@ export default function SubscriptionPage() {
             });
             if (res.ok) {
                 const data = await res.json();
-                if (data.url) {
-                    window.open(data.url, '_blank');
+                if (data.portal_url) { // Changed from url to portal_url
+                    window.location.href = data.portal_url; // Changed from window.open properly
                 }
             }
         } catch (err) {
