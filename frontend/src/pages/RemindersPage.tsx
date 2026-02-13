@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
     Bell,
     Plus,
     Trash2,
     Clock,
-    AlertCircle,
     X,
     Loader2,
     RefreshCw
@@ -30,7 +30,6 @@ export default function RemindersPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
 
     // Form state
     const [task, setTask] = useState('');
@@ -63,12 +62,11 @@ export default function RemindersPage() {
 
     const handleCreate = async () => {
         if (!task.trim() || !message.trim() || !remindAt) {
-            setError('Please fill in all required fields');
+            toast.error('Please fill in all required fields');
             return;
         }
 
         setSaving(true);
-        setError('');
 
         try {
             const token = localStorage.getItem('token');
@@ -94,10 +92,10 @@ export default function RemindersPage() {
                 fetchReminders();
             } else {
                 const data = await res.json();
-                setError(data.error || 'Failed to create reminder');
+                toast.error(data.error || 'Failed to create reminder');
             }
         } catch (err) {
-            setError('Failed to create reminder');
+            toast.error('Failed to create reminder');
         } finally {
             setSaving(false);
         }
@@ -138,7 +136,6 @@ export default function RemindersPage() {
         setReminderType('EMAIL');
         setIsRecurring(false);
         setPattern('WEEKLY');
-        setError('');
     };
 
     const statusColors: Record<string, { bg: string; text: string }> = {
@@ -252,12 +249,7 @@ export default function RemindersPage() {
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {error && (
-                        <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                            <AlertCircle size={14} style={{ color: 'var(--color-error)', marginRight: '8px' }} />
-                            <span style={{ fontSize: '13px', color: 'var(--color-error)' }}>{error}</span>
-                        </div>
-                    )}
+
 
                     <div>
                         <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Task *</label>

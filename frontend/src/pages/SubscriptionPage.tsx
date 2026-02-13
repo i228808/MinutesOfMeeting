@@ -7,7 +7,6 @@ import {
     Crown,
     Loader2,
     ExternalLink,
-    AlertCircle,
     Star
 } from 'lucide-react';
 
@@ -97,7 +96,6 @@ export default function SubscriptionPage() {
     const [user, setUser] = useState<any>(null); // Added user state
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [error, setError] = useState('');
 
     const fetchData = async () => {
         try {
@@ -167,13 +165,13 @@ export default function SubscriptionPage() {
                     window.history.replaceState({}, '', window.location.pathname);
                     window.location.reload();
                 } else {
-                    setError('Payment verification failed');
+                    toast.error('Payment verification failed');
                     fetchData();
                 }
             }
         } catch (err) {
             console.error('Verification error:', err);
-            setError('Payment verification failed');
+            toast.error('Payment verification failed');
             fetchData();
         }
     };
@@ -182,7 +180,6 @@ export default function SubscriptionPage() {
         if (tier === subscription?.tier) return;
 
         setActionLoading(tier);
-        setError('');
 
         try {
             const token = localStorage.getItem('token');
@@ -204,10 +201,10 @@ export default function SubscriptionPage() {
                     toast.error('Failed to start checkout');
                 }
             } else {
-                setError(data.error || 'Failed to change plan');
+                toast.error(data.error || 'Failed to change plan');
             }
         } catch (err) {
-            setError('Failed to change plan');
+            toast.error('Failed to change plan');
         } finally {
             setActionLoading(null);
         }
@@ -253,12 +250,7 @@ export default function SubscriptionPage() {
                 </p>
             </div>
 
-            {error && (
-                <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center' }}>
-                    <AlertCircle size={16} style={{ color: '#f87171', marginRight: '8px' }} />
-                    <span style={{ fontSize: '14px', color: '#f87171' }}>{error}</span>
-                </div>
-            )}
+
 
             {/* Current Usage */}
             {subscription && (

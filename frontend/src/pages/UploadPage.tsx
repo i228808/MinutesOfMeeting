@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
     Upload,
@@ -6,7 +7,6 @@ import {
     FileText as FileTextIcon,
     X,
     CheckCircle,
-    AlertCircle,
     Sparkles,
     Trash2,
     Save,
@@ -38,7 +38,6 @@ export default function UploadPage() {
 
     const [mode, setMode] = useState<UploadMode>('text');
     const [status, setStatus] = useState<UploadStatus>('idle');
-    const [error, setError] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [title, setTitle] = useState('');
     const [textTranscript, setTextTranscript] = useState('');
@@ -88,11 +87,10 @@ export default function UploadPage() {
     };
 
     const handleAnalyze = async () => {
-        if (!title.trim()) { setError('Please enter a title'); return; }
-        if (mode === 'text' && !textTranscript.trim()) { setError('Please enter the transcript text'); return; }
-        if (mode === 'audio' && !selectedFile) { setError('Please select an audio file'); return; }
+        if (!title.trim()) { toast.error('Please enter a title'); return; }
+        if (mode === 'text' && !textTranscript.trim()) { toast.error('Please enter the transcript text'); return; }
+        if (mode === 'audio' && !selectedFile) { toast.error('Please select an audio file'); return; }
 
-        setError('');
         setStatus('analyzing');
         setProgress(mode === 'audio' ? 'Transcribing audio...' : 'Analyzing with AI...');
 
@@ -135,7 +133,7 @@ export default function UploadPage() {
             setAnalysis(data.analysis);
             setStatus('review');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Analysis failed');
+            toast.error(err instanceof Error ? err.message : 'Analysis failed');
             setStatus('error');
         }
     };
@@ -168,7 +166,7 @@ export default function UploadPage() {
             setStatus('success');
             setTimeout(() => navigate(`/dashboard/meetings/${data.meeting.id}`), 1500);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Save failed');
+            toast.error(err instanceof Error ? err.message : 'Save failed');
             setStatus('error');
         }
     };
@@ -425,12 +423,7 @@ John: I'll call them today and get that sorted. Good work everyone!`;
                 </button>
             </div>
 
-            {error && (
-                <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', marginBottom: '24px' }}>
-                    <AlertCircle size={18} style={{ color: '#f87171', marginRight: '10px' }} />
-                    <span style={{ color: '#f87171', fontSize: '14px' }}>{error}</span>
-                </div>
-            )}
+
 
             <div className="dashboard-card" style={{ padding: '32px' }}>
                 <div style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>

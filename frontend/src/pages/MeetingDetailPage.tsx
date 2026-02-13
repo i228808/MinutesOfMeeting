@@ -10,7 +10,6 @@ import {
     ListChecks,
     MessageSquare,
     Loader2,
-    AlertCircle,
     CheckCircle2
 } from 'lucide-react';
 import GlassModal from '../components/GlassModal';
@@ -74,7 +73,6 @@ export default function MeetingDetailPage() {
     const [meeting, setMeeting] = useState<Meeting | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [actionError, setActionError] = useState('');
     const [showContractModal, setShowContractModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [canEdit, setCanEdit] = useState(false);
@@ -133,7 +131,6 @@ export default function MeetingDetailPage() {
 
     const handleExportToSheets = async () => {
         setActionLoading('sheets');
-        setActionError('');
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/meetings/${id}/export-sheets`, {
@@ -147,10 +144,10 @@ export default function MeetingDetailPage() {
                 window.open(data.spreadsheet?.url, '_blank');
                 fetchMeeting(); // Refresh to update export status
             } else {
-                setActionError(data.error || 'Export failed');
+                toast.error(data.error || 'Export failed');
             }
         } catch (error) {
-            setActionError('Failed to export to Sheets');
+            toast.error('Failed to export to Sheets');
         } finally {
             setActionLoading(null);
         }
@@ -158,7 +155,6 @@ export default function MeetingDetailPage() {
 
     const handleCreateEvents = async () => {
         setActionLoading('calendar');
-        setActionError('');
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/meetings/${id}/create-events`, {
@@ -169,13 +165,13 @@ export default function MeetingDetailPage() {
             const data = await res.json();
 
             if (res.ok) {
-                alert(`Created ${data.events_created} calendar events!`);
+                toast.success(`Created calendar events!`);
                 fetchMeeting();
             } else {
-                setActionError(data.error || 'Failed to create events');
+                toast.error(data.error || 'Failed to create events');
             }
         } catch (error) {
-            setActionError('Failed to create calendar events');
+            toast.error('Failed to create calendar events');
         } finally {
             setActionLoading(null);
         }
@@ -183,7 +179,6 @@ export default function MeetingDetailPage() {
 
     const handleSave = async () => {
         setActionLoading('save');
-        setActionError('');
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/meetings/${id}`, {
@@ -206,19 +201,19 @@ export default function MeetingDetailPage() {
                     await handleCreateEvents();
                 }
             } else {
-                setActionError(data.error || 'Failed to save changes');
+                toast.error(data.error || 'Failed to save changes');
             }
         } catch (error) {
-            setActionError('Failed to save changes');
+            toast.error('Failed to save changes');
         } finally {
             setActionLoading(null);
         }
     };
 
+
     const handleDraftContract = async () => {
         if (!meeting) return;
         setActionLoading('contract');
-        setActionError('');
         setShowContractModal(false);
 
         try {
@@ -246,10 +241,10 @@ export default function MeetingDetailPage() {
             if (res.ok && data.contract?.id) {
                 navigate(`/dashboard/contracts/${data.contract.id}`);
             } else {
-                setActionError(data.error || 'Failed to generate contract');
+                toast.error(data.error || 'Failed to generate contract');
             }
         } catch (error) {
-            setActionError('Failed to generate contract');
+            toast.error('Failed to generate contract');
         } finally {
             setActionLoading(null);
         }
@@ -440,28 +435,7 @@ export default function MeetingDetailPage() {
                 </div>
             </GlassModal>
 
-            {/* Error Alert */}
-            {actionError && (
-                <div style={{
-                    marginBottom: '24px',
-                    padding: '16px',
-                    borderRadius: '8px',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    color: '#fca5a5'
-                }}>
-                    <AlertCircle size={20} style={{ marginRight: '12px' }} />
-                    {actionError}
-                    <button
-                        onClick={() => setActionError('')}
-                        style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}
-                    >
-                        Dismiss
-                    </button>
-                </div>
-            )}
+
 
             {/* Content Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
