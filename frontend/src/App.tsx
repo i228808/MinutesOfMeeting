@@ -101,9 +101,12 @@ function AuthCallback() {
 
 import { ThemeProvider } from './context/ThemeContext';
 
+import { Analytics } from "@vercel/analytics/react"
+
 function App() {
   return (
     <ThemeProvider>
+      <Analytics />
       <BrowserRouter>
         <BodyClassController />
         <Suspense fallback={
